@@ -4,12 +4,13 @@ This project is a continuation of the discontinued https://github.com/indigo-dc/
 ## Dependencies
 
 This project uses the following elements:
-- OpenStack java bindings: http://www.openstack4j.com/
-- Docker bindings: https://github.com/docker-java/docker-java
-- OpenNebula bindings: http://docs.opennebula.org/4.12/integration/system_interfaces/java.html
+- [OpenStack java bindings](http://www.openstack4j.com/)
+- [Docker java bindings](https://github.com/docker-java/docker-java)
+- [OpenNebula java bindings](http://docs.opennebula.org/4.12/integration/system_interfaces/java.html)
+
 The later one is not present in any maven repository and so it's included in the project to easen the deployment.
 
-Additionally the REST interface is based on Jersey 2.X and Grizzly
+Additionally the REST interface is based on [Jersey 2.X](https://jersey.java.net/) and [Grizzly](https://grizzly.java.net/)
 
 All dependencies save OpenNebula java bindings are managed by maven automatically
 
@@ -22,6 +23,7 @@ The repository synchronization project needs access to:
 ### Docker configuration
 
 The configuration process is described in https://github.com/docker-java/docker-java
+
 All the described options are accepted but it's prefereable to have a $HOME/.docker-java.properties file configured to simplify the process
 
 ### OpenStack configuration
@@ -51,5 +53,6 @@ Please notice that only v3 of the keystone protocol is supported.
 ## Development
 
 To start developing just clone the repository with git clone https://github.com/indigo-dc/java-syncrepos.git 
+
 To execute the REST server, run mvn exec:java
 
