@@ -1,5 +1,6 @@
 package com.atos.indigo.reposync;
 
+import com.atos.indigo.reposync.providers.OpenStackRepositoryServiceProvider;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectImageResponse;
 import com.github.dockerjava.api.model.Image;
@@ -29,6 +30,9 @@ public class Main {
         // create a resource config that scans for JAX-RS resources and providers
         // in com.atos.indigo.reposync package
         final ResourceConfig rc = new ResourceConfig().packages("com.atos.indigo.reposync");
+        rc.register(AuthorizationRequestFilter.class);
+        System.setProperty(RepositoryServiceProviderService.TOKEN, "test");
+
 
 
         // create and start a new instance of grizzly http server

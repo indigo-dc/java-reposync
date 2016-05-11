@@ -1,6 +1,9 @@
-package com.atos.indigo.reposync;
+package com.atos.indigo.reposync.providers;
 
+import com.atos.indigo.reposync.beans.ActionResponseBean;
+import com.atos.indigo.reposync.beans.ImageInfoBean;
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.InspectImageResponse;
 import com.github.dockerjava.api.model.Image;
 import org.opennebula.client.Client;
 import org.opennebula.client.ClientConfigurationException;
@@ -10,7 +13,9 @@ import org.opennebula.client.datastore.DatastorePool;
 import org.opennebula.client.image.ImagePool;
 
 import javax.ws.rs.PathParam;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -22,7 +27,6 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
     public static final String ONEDOCK_DATASTORE_NAME = "onedock";
     public static final String DOCKER_PREFIX = "docker://";
 
-    Map<String, Client> providers = new HashMap<String,Client>();
 
     private Client createClient(String username, String password) throws ClientConfigurationException {
         String authToken = username + ":" + password;
@@ -31,29 +35,7 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
     }
 
     @Override
-    public String login(String username, String password) {
-        String authToken = username + ":" + password;
-        try {
-            Client imgPool = createClient(username, password);
-            if (imgPool != null) {
-                String token = AuthorizationManager.generateToken(username, password);
-                providers.put(token,imgPool);
-                return token;
-            }
-
-        } catch (ClientConfigurationException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    @Override
-    public String logout(String token) {
-        return null;
-    }
-
-    @Override
-    public String images(String token, String parameters) {
+    public List<ImageInfoBean> images(String parameters) {
         return null;
     }
 
@@ -63,12 +45,7 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
     }
 
     @Override
-    public String push(String imageData) {
-        return null;
-    }
-
-    @Override
-    public String delete(@PathParam("imageId") String imageId) {
+    public ActionResponseBean delete(@PathParam("imageId") String imageId) {
         return null;
     }
 
@@ -161,6 +138,11 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
 
         return null;
 
+    }
+
+    @Override
+    public ImageInfoBean imageUpdated(InspectImageResponse img, DockerClient client) {
+        return null;
     }
 
     private void addImage(String imageName, Client oneClient, Integer dockerStoreId) {

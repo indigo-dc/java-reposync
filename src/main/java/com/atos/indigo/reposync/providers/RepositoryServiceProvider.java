@@ -1,6 +1,9 @@
-package com.atos.indigo.reposync;
+package com.atos.indigo.reposync.providers;
 
+import com.atos.indigo.reposync.beans.ActionResponseBean;
+import com.atos.indigo.reposync.beans.ImageInfoBean;
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.InspectImageResponse;
 import com.github.dockerjava.api.model.Image;
 
 import java.util.List;
@@ -11,17 +14,11 @@ import java.util.List;
 public interface RepositoryServiceProvider {
 
 
-    String login(String username, String password);
-
-    String logout(String token);
-
-    String images(String token, String parameters);
+    List<ImageInfoBean> images(String parameters);
 
     String pull(String imageName);
 
-    String push(String imageData);
-
-    String delete(String imageId);
+    ActionResponseBean delete(String imageId);
 
     String log(String parameters);
 
@@ -34,4 +31,6 @@ public interface RepositoryServiceProvider {
     String externalPull(String repoId, String imageId);
 
     String sync(List<Image> imageSummaries, DockerClient client);
+
+    ImageInfoBean imageUpdated(InspectImageResponse img, DockerClient client);
 }
