@@ -1,0 +1,7 @@
+/target
+/.idea
+/.settings
+/RepoSync.iml
+/jssecacerts
+/.project
+/.classpath
