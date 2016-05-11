@@ -52,7 +52,7 @@ Please notice that only v3 of the keystone protocol is supported.
 
 ## Development
 
-To start developing just clone the repository with git clone https://github.com/indigo-dc/java-syncrepos.git 
+To start developing just clone the repository with `git clone https://github.com/indigo-dc/java-syncrepos.git` 
 
-To execute the REST server, run mvn exec:java
+To execute the REST server, run `mvn exec:java`
 
