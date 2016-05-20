@@ -16,7 +16,6 @@ import javax.ws.rs.PathParam;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Created by jose on 20/04/16.
@@ -36,11 +35,6 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
 
     @Override
     public List<ImageInfoBean> images(String parameters) {
-        return null;
-    }
-
-    @Override
-    public String pull(@PathParam("imageName") String imageName) {
         return null;
     }
 
@@ -82,6 +76,9 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
         }
     }
 
+    private void removeImage(List<Image> images, String name) {
+
+    }
 
     @Override
     public String sync(List<Image> imageSummaries, DockerClient client) {
@@ -121,14 +118,18 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
                 }
 
 
-                List<String> toAdd = imageSummaries.stream().
+                for (Image image : imageSummaries) {
+                    String name = getImageName(image);
+
+                }
+                /*List<String> toAdd = imageSummaries.stream().
                         map(image -> getImageName(image))
                         .filter(
                             imageName ->
                                 !existing.contains(imageName)).collect(Collectors.toList());
 
                 final Integer storeId = dockerStoreId;
-                toAdd.forEach(imageName -> addImage(imageName, oneClient, storeId));
+                toAdd.forEach(imageName -> addImage(imageName, oneClient, storeId));*/
 
             }
         } catch (ClientConfigurationException e) {
@@ -141,7 +142,7 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
     }
 
     @Override
-    public ImageInfoBean imageUpdated(InspectImageResponse img, DockerClient client) {
+    public ImageInfoBean imageUpdated(String imageName, String tag, InspectImageResponse img, DockerClient client) {
         return null;
     }
 

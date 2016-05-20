@@ -20,7 +20,8 @@ import java.util.List;
  */
 public class Main {
     // Base URI the Grizzly HTTP server will listen on
-    public static final String BASE_URI = "http://localhost:8085/";
+    public static final String BASE_URI = "http://0.0.0.0:8085/";
+    public static final String BASE_PKG = "com.atos.indigo.reposync";
 
     /**
      * Starts Grizzly HTTP server exposing JAX-RS resources defined in this application.
@@ -29,7 +30,7 @@ public class Main {
     public static HttpServer startServer() {
         // create a resource config that scans for JAX-RS resources and providers
         // in com.atos.indigo.reposync package
-        final ResourceConfig rc = new ResourceConfig().packages("com.atos.indigo.reposync");
+        final ResourceConfig rc = new ResourceConfig().packages(BASE_PKG);
         rc.register(AuthorizationRequestFilter.class);
         System.setProperty(RepositoryServiceProviderService.TOKEN, "test");
 
@@ -42,11 +43,12 @@ public class Main {
 
     public static void execServer() throws IOException {
         final HttpServer server = startServer();
-        System.out.println(String.format("Jersey app started with WADL available at "
+        System.out.println(String.format("Jersey app started in Grizzly with WADL available at "
                 + "%sapplication.wadl\nHit enter to stop it...", BASE_URI));
         System.in.read();
         server.stop();
     }
+
 
     public static void getImages() {
 
@@ -70,8 +72,8 @@ public class Main {
      * @param args
      * @throws IOException
      */
-    public static void main(String[] args) throws IOException {
-        execServer();
+    public static void main(String[] args) throws Exception {
+       execServer();
     }
 }
 

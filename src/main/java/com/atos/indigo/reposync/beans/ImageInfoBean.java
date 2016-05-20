@@ -1,7 +1,5 @@
 package com.atos.indigo.reposync.beans;
 
-import java.util.List;
-
 /**
  * Created by jose on 9/05/16.
  */
@@ -18,7 +16,11 @@ public class ImageInfoBean {
 
     private ImageType type;
 
-    private List<String> tags;
+    private String dockerId;
+
+    private String dockerName;
+
+    private String dockerTag;
 
     private String comment;
 
@@ -46,12 +48,28 @@ public class ImageInfoBean {
         this.type = type;
     }
 
-    public List<String> getTags() {
-        return tags;
+    public String getDockerTag() {
+        return dockerTag;
     }
 
-    public void setTags(List<String> tags) {
-        this.tags = tags;
+    public void setDockerTag(String dockerTag) {
+        this.dockerTag = dockerTag;
+    }
+
+    public String getDockerId() {
+        return dockerId;
+    }
+
+    public void setDockerId(String dockerId) {
+        this.dockerId = dockerId;
+    }
+
+    public String getDockerName() {
+        return dockerName;
+    }
+
+    public void setDockerName(String dockerName) {
+        this.dockerName = dockerName;
     }
 
     public String getComment() {

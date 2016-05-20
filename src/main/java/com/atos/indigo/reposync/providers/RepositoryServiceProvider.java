@@ -16,8 +16,6 @@ public interface RepositoryServiceProvider {
 
     List<ImageInfoBean> images(String parameters);
 
-    String pull(String imageName);
-
     ActionResponseBean delete(String imageId);
 
     String log(String parameters);
@@ -32,5 +30,5 @@ public interface RepositoryServiceProvider {
 
     String sync(List<Image> imageSummaries, DockerClient client);
 
-    ImageInfoBean imageUpdated(InspectImageResponse img, DockerClient client);
+    ImageInfoBean imageUpdated(String imageName, String tag, InspectImageResponse img, DockerClient client);
 }

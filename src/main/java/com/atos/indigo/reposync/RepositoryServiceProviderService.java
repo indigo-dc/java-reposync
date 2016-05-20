@@ -4,6 +4,8 @@ import com.atos.indigo.reposync.beans.ActionResponseBean;
 import com.atos.indigo.reposync.beans.ImageInfoBean;
 import com.atos.indigo.reposync.providers.OpenStackRepositoryServiceProvider;
 import com.atos.indigo.reposync.providers.RepositoryServiceProvider;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectImageResponse;
 import com.github.dockerjava.api.command.PullImageCmd;
@@ -13,13 +15,9 @@ import com.github.dockerjava.core.command.PullImageResultCallback;
 import org.glassfish.jersey.server.ChunkedOutput;
 
 import javax.inject.Singleton;
-import javax.json.Json;
-import javax.json.JsonBuilderFactory;
-import javax.json.JsonObject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.List;
 
 /**
@@ -32,8 +30,6 @@ public class RepositoryServiceProviderService {
     public static final String TOKEN = "X-Auth-Token";
 
     RepositoryServiceProvider provider = new OpenStackRepositoryServiceProvider();
-    private JsonBuilderFactory factory = Json.createBuilderFactory(null);
-    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
     DockerClientConfig config = DockerClientConfig.createDefaultConfigBuilder().withDockerHost("unix:///var/run/docker.sock").withDockerTlsVerify(false).build();
     DockerClient dockerClient = DockerClientBuilder.getInstance(config).build();
@@ -52,46 +48,43 @@ public class RepositoryServiceProviderService {
     @Path("images/{imageName}")
     @Produces(MediaType.APPLICATION_JSON)
     public ChunkedOutput<ImageInfoBean> pull(
-                                    @HeaderParam(TOKEN) String token,
-                                    @PathParam("imageName") String imageName,
-                                    @QueryParam("tag")String tag) {
+                                    @PathParam("imageName") final String imageName,
+                                    @QueryParam("tag")final String tag) {
 
-        String systemToken = System.getProperty(TOKEN);
-        if (systemToken.equals(token)) {
 
-            final ChunkedOutput<ImageInfoBean> output = new ChunkedOutput<>(ImageInfoBean.class);
+        final ChunkedOutput<ImageInfoBean> output = new ChunkedOutput<>(ImageInfoBean.class);
 
-            PullImageCmd pullCmd = dockerClient.pullImageCmd(imageName);
-            if (tag != null) {
-                pullCmd.withTag(tag);
-            }
+        final PullImageCmd pullCmd = dockerClient.pullImageCmd(imageName);
 
-            new Thread() {
-                @Override
-                public void run() {
-                    try {
-                        pullCmd.exec(new PullImageResultCallback()).awaitSuccess();
-                        InspectImageResponse img = dockerClient.inspectImageCmd(imageName).exec();
-                        if (img != null) {
-                            output.write(provider.imageUpdated(img, dockerClient));
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    } finally {
-                        try {
-                            output.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                }
-            }.start();
-
-            return output;
-        } else {
-            throw new NotAuthorizedException("Invalid API token");
+        if (tag != null) {
+            pullCmd.withTag(tag);
         }
+
+        final String finalTag = (tag!=null)?tag:"latest";
+
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    pullCmd.exec(new PullImageResultCallback()).awaitSuccess();
+                    InspectImageResponse img = dockerClient.inspectImageCmd(imageName).exec();
+                    if (img != null) {
+                        output.write(provider.imageUpdated(imageName, finalTag, img, dockerClient));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    try {
+                        output.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+            }
+        }.start();
+
+        return output;
     }
 
     @DELETE
@@ -147,9 +140,14 @@ public class RepositoryServiceProviderService {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("notify")
-    public String notify(JsonObject payload) {
-        System.out.println("payload = [" + payload.toString() + "]");
-        return "";
+    public void notify(@QueryParam("token")String token, ObjectNode payload) {
+        JsonNode pushData = payload.get("push_data");
+        String tag = pushData.get("tag").asText();
+
+        JsonNode repoInfo = payload.get("repository");
+        String repoName = repoInfo.get("repo_name").asText();
+
+        ChunkedOutput<ImageInfoBean> result = pull(repoName, tag);
     }
 
     @POST
