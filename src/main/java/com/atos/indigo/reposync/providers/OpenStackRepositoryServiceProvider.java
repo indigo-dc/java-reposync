@@ -1,5 +1,6 @@
 package com.atos.indigo.reposync.providers;
 
+import com.atos.indigo.reposync.ConfigurationManager;
 import com.atos.indigo.reposync.beans.ActionResponseBean;
 import com.atos.indigo.reposync.beans.ImageInfoBean;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,10 +30,10 @@ import java.util.regex.Pattern;
  */
 public class OpenStackRepositoryServiceProvider implements RepositoryServiceProvider {
 
-    private static final String ENDPOINT = System.getenv("OS_AUTH_URL");
-    private static final String PROJECT_DOMAIN = System.getenv("OS_PROJECT_DOMAIN_NAME");
-    private static final String PROJECT = System.getenv("OS_PROJECT_NAME");
-    private static final String DOMAIN = System.getenv("OS_USER_DOMAIN_NAME");
+    private static final String ENDPOINT = ConfigurationManager.getProperty("OS_AUTH_URL");
+    private static final String PROJECT_DOMAIN = ConfigurationManager.getProperty("OS_PROJECT_DOMAIN_NAME");
+    private static final String PROJECT = ConfigurationManager.getProperty("OS_PROJECT_NAME");
+    private static final String DOMAIN = ConfigurationManager.getProperty("OS_USER_DOMAIN_NAME");
 
     private static final String ADMIN_USER_VAR = "OS_USERNAME";
     private static final String ADMIN_PASS_VAR = "OS_PASSWORD";
@@ -54,8 +55,8 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
     }
 
     private ImageService getAdminClient(){
-        String adminUser = System.getenv(ADMIN_USER_VAR);
-        String adminPass = System.getenv(ADMIN_PASS_VAR);
+        String adminUser = ConfigurationManager.getProperty(ADMIN_USER_VAR);
+        String adminPass = ConfigurationManager.getProperty(ADMIN_PASS_VAR);
 
         if (adminUser != null && adminPass != null) {
             return getClient(adminUser, adminPass).images();

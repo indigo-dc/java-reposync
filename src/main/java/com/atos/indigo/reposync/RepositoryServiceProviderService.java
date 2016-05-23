@@ -2,6 +2,7 @@ package com.atos.indigo.reposync;
 
 import com.atos.indigo.reposync.beans.ActionResponseBean;
 import com.atos.indigo.reposync.beans.ImageInfoBean;
+import com.atos.indigo.reposync.providers.OpenNebulaRepositoryServiceProvider;
 import com.atos.indigo.reposync.providers.OpenStackRepositoryServiceProvider;
 import com.atos.indigo.reposync.providers.RepositoryServiceProvider;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -26,16 +27,18 @@ import java.util.List;
 @Singleton
 public class RepositoryServiceProviderService {
 
-    public static final String TOKEN = "X-Auth-Token";
-
-    RepositoryServiceProvider provider = new OpenStackRepositoryServiceProvider();
+    RepositoryServiceProvider provider =
+            (ReposyncTags.REPOSYNC_BACKEND_OS.toLowerCase().equals(
+                    System.getProperty(ReposyncTags.REPOSYNC_BACKEND).toLowerCase()))?
+                    new OpenStackRepositoryServiceProvider():
+                    new OpenNebulaRepositoryServiceProvider();
     DockerClient dockerClient = DockerClientBuilder.getInstance().build();
-
 
     @GET
     @Path("images")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
+    @Authorized
     public List<ImageInfoBean> images(@QueryParam("filter")String filter) {
         return provider.images(filter);
     }
@@ -44,6 +47,7 @@ public class RepositoryServiceProviderService {
     @PUT
     @Path("images/{imageName}")
     @Produces(MediaType.APPLICATION_JSON)
+    @Authorized
     public ChunkedOutput<ImageInfoBean> pull(
                                     @PathParam("imageName") final String imageName,
                                     @QueryParam("tag")final String tag) {
@@ -87,6 +91,7 @@ public class RepositoryServiceProviderService {
     @DELETE
     @Path("images/{imageId}")
     @Produces(MediaType.APPLICATION_JSON)
+    @Authorized
     public ActionResponseBean delete(@PathParam("imageId") String imageId) {
         return provider.delete(imageId);
     }
@@ -138,19 +143,24 @@ public class RepositoryServiceProviderService {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("notify")
     public void notify(@QueryParam("token")String token, ObjectNode payload) {
-        JsonNode pushData = payload.get("push_data");
-        String tag = pushData.get("tag").asText();
+        if (token != null && token.equals(System.getProperty(ReposyncTags.REPOSYNC_TOKEN))) {
+            JsonNode pushData = payload.get("push_data");
+            String tag = pushData.get("tag").asText();
 
-        JsonNode repoInfo = payload.get("repository");
-        String repoName = repoInfo.get("repo_name").asText();
+            JsonNode repoInfo = payload.get("repository");
+            String repoName = repoInfo.get("repo_name").asText();
 
-        ChunkedOutput<ImageInfoBean> result = pull(repoName, tag);
+            ChunkedOutput<ImageInfoBean> result = pull(repoName, tag);
+        } else {
+            throw new NotAuthorizedException("Authorization token needed");
+        }
     }
 
     @POST
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("sync")
+    @Authorized
     public String sync() {
         return provider.sync(dockerClient.listImagesCmd().exec(), dockerClient);
     }
