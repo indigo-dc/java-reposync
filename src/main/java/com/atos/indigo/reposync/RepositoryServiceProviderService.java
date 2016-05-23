@@ -10,7 +10,6 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectImageResponse;
 import com.github.dockerjava.api.command.PullImageCmd;
 import com.github.dockerjava.core.DockerClientBuilder;
-import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.command.PullImageResultCallback;
 import org.glassfish.jersey.server.ChunkedOutput;
 
@@ -30,9 +29,7 @@ public class RepositoryServiceProviderService {
     public static final String TOKEN = "X-Auth-Token";
 
     RepositoryServiceProvider provider = new OpenStackRepositoryServiceProvider();
-
-    DockerClientConfig config = DockerClientConfig.createDefaultConfigBuilder().withDockerHost("unix:///var/run/docker.sock").withDockerTlsVerify(false).build();
-    DockerClient dockerClient = DockerClientBuilder.getInstance(config).build();
+    DockerClient dockerClient = DockerClientBuilder.getInstance().build();
 
 
     @GET
