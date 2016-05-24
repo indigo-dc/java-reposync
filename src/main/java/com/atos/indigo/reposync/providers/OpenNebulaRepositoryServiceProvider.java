@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Created by jose on 20/04/16.
@@ -77,22 +78,28 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
             OneResponse infoRes = imgPool.info();
             if (!infoRes.isError()) {
                 Iterator<org.opennebula.client.image.Image> imgResponse = imgPool.iterator();
+                Pattern pattern = null;
+                if (parameters != null) {
+                    pattern = Pattern.compile(parameters);
+                }
                 while (imgResponse != null && imgResponse.hasNext()) {
                     org.opennebula.client.image.Image img = imgResponse.next();
-                    ImageInfoBean imgInfo = new ImageInfoBean();
-                    imgInfo.setId(img.getId());
-                    imgInfo.setName(img.getName());
-                    String templateBase = "TEMPLATE/";
-                    String dockerId = img.xpath(templateBase+DOCKER_ID);
-                    if (dockerId != null) {
-                        imgInfo.setType(ImageInfoBean.ImageType.DOCKER);
-                        imgInfo.setDockerId(dockerId);
-                        imgInfo.setDockerName(img.xpath(templateBase+DOCKER_NAME));
-                        imgInfo.setDockerTag(img.xpath(templateBase+DOCKER_TAG));
-                    } else {
-                        imgInfo.setType(ImageInfoBean.ImageType.VM);
+                    if (pattern == null || (pattern != null && pattern.matcher(img.getName()).matches())) {
+                        ImageInfoBean imgInfo = new ImageInfoBean();
+                        imgInfo.setId(img.getId());
+                        imgInfo.setName(img.getName());
+                        String templateBase = "TEMPLATE/";
+                        String dockerId = img.xpath(templateBase + DOCKER_ID);
+                        if (dockerId != null) {
+                            imgInfo.setType(ImageInfoBean.ImageType.DOCKER);
+                            imgInfo.setDockerId(dockerId);
+                            imgInfo.setDockerName(img.xpath(templateBase + DOCKER_NAME));
+                            imgInfo.setDockerTag(img.xpath(templateBase + DOCKER_TAG));
+                        } else {
+                            imgInfo.setType(ImageInfoBean.ImageType.VM);
+                        }
+                        result.add(imgInfo);
                     }
-                    result.add(imgInfo);
                 }
             }
         } catch (ClientConfigurationException e) {
@@ -103,7 +110,34 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
 
     @Override
     public ActionResponseBean delete(@PathParam("imageId") String imageId) {
-        return null;
+        ActionResponseBean result = new ActionResponseBean();
+        try {
+            ImagePool client = new ImagePool(createClient());
+            OneResponse infoLoad = client.infoAll();
+            if (!infoLoad.isError()) {
+                org.opennebula.client.image.Image img = client.getById(new Integer(imageId));
+                if (img != null) {
+                    OneResponse response = img.delete();
+                    result.setSuccess(!response.isError());
+                    result.setErrorMessage(response.getErrorMessage());
+                } else {
+                    result.setSuccess(false);
+                    result.setErrorMessage("Image "+imageId+" not found");
+                }
+            } else {
+                result.setSuccess(false);
+                result.setErrorMessage("Error loading images info: "+infoLoad.getErrorMessage());
+            }
+        } catch (ClientConfigurationException e) {
+            logger.error("Error deleting image "+imageId,e);
+            result.setSuccess(false);
+            result.setErrorMessage("OneClient configuration error: " + e.getMessage());
+        } catch (NumberFormatException e) {
+            result.setErrorMessage("Invalid image id " + imageId+". A number was expected");
+            result.setSuccess(false);
+        }
+
+        return result;
     }
 
     @Override
@@ -139,9 +173,6 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
         }
     }
 
-    private void removeImage(List<Image> images, String name) {
-
-    }
 
     private Integer getDockerDatastoreId(Client oneClient) {
         DatastorePool dataPool = new DatastorePool(oneClient);

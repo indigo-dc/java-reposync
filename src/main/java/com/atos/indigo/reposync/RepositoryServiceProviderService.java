@@ -13,6 +13,8 @@ import com.github.dockerjava.api.command.PullImageCmd;
 import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.core.command.PullImageResultCallback;
 import org.glassfish.jersey.server.ChunkedOutput;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
 import javax.ws.rs.*;
@@ -26,6 +28,8 @@ import java.util.List;
 @Path("v1.0")
 @Singleton
 public class RepositoryServiceProviderService {
+
+    private static final Logger logger = LoggerFactory.getLogger(RepositoryServiceProvider.class);
 
     RepositoryServiceProvider provider =
             (ReposyncTags.REPOSYNC_BACKEND_OS.toLowerCase().equals(
@@ -73,12 +77,12 @@ public class RepositoryServiceProviderService {
                         output.write(provider.imageUpdated(imageName, finalTag, img, dockerClient));
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    logger.error("Error pulling image "+imageName+":"+finalTag,e);
                 } finally {
                     try {
                         output.close();
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        logger.error("Error writing output response while pull operation",e);
                     }
                 }
 
