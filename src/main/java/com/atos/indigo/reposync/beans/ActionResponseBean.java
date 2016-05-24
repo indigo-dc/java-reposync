@@ -5,22 +5,22 @@ package com.atos.indigo.reposync.beans;
  */
 public class ActionResponseBean {
 
-  private boolean success;
-  private String errorMessage;
+    private boolean success;
+    private String errorMessage;
 
-  public boolean isSuccess() {
-    return success;
-  }
+    public boolean isSuccess() {
+        return success;
+    }
 
-  public void setSuccess(boolean success) {
-    this.success = success;
-  }
+    public void setSuccess(boolean success) {
+        this.success = success;
+    }
 
-  public String getErrorMessage() {
-    return errorMessage;
-  }
+    public String getErrorMessage() {
+        return errorMessage;
+    }
 
-  public void setErrorMessage(String errorMessage) {
-    this.errorMessage = errorMessage;
-  }
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
+    }
 }

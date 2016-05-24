@@ -5,19 +5,19 @@ package com.atos.indigo.reposync;
  */
 public class ConfigurationException extends Exception {
 
-  private String property;
+    private String property;
 
-  public ConfigurationException(String property) {
-    this.property = property;
-  }
+    public ConfigurationException(String property) {
+        this.property = property;
+    }
 
-  @Override
-  public String getMessage() {
-    return "Mandatory property " + property + " not defined";
-  }
+    @Override
+    public String getMessage() {
+        return "Mandatory property " + property + " not defined";
+    }
 
-  @Override
-  public String getLocalizedMessage() {
-    return getMessage();
-  }
+    @Override
+    public String getLocalizedMessage() {
+        return getMessage();
+    }
 }

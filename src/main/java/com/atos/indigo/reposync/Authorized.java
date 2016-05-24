@@ -1,8 +1,9 @@
 package com.atos.indigo.reposync;
 
-import javax.ws.rs.NameBinding;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+
+import javax.ws.rs.NameBinding;
 
 /**
  * Created by jose on 23/05/16.
