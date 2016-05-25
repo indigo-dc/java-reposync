@@ -34,9 +34,9 @@ public class Main {
   }
 
   /**
-   * Execute a standalone Grizzly server
-   * @throws IOException
-   * @throws ConfigurationException
+   * Execute a standalone Grizzly server.
+   * @throws IOException If the server fails to start.
+   * @throws ConfigurationException If some needed properties are not found.
    */
   public static void execServer() throws IOException, ConfigurationException {
     final HttpServer server = startServer();

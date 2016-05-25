@@ -67,9 +67,9 @@ public class ConfigurationManager {
   }
 
   /**
-   * Gets a property either from the system environment or the system properties
-   * @param property property name
-   * @return the system environment variable or system property found
+   * Gets a property either from the system environment or the system properties.
+   * @param property property name.
+   * @return the system environment variable or system property found.
    */
   public static String getProperty(String property) {
     String prop = System.getenv(property);
