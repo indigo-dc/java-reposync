@@ -49,6 +49,11 @@ public class RepositoryServiceProviderService {
         : new OpenNebulaRepositoryServiceProvider();
   DockerClient dockerClient = DockerClientBuilder.getInstance().build();
 
+  /**
+   * Get a list of images present in the IaaS platform filtering by name.
+   * @param filter Optional filter by name. It should be a regular expression.
+   * @return The list of images found.
+   */
   @GET
   @Path("images")
   @Produces(MediaType.APPLICATION_JSON)
@@ -59,6 +64,12 @@ public class RepositoryServiceProviderService {
   }
 
 
+  /**
+   * Force the download and register of a docker image.
+   * @param imageName Image name in Docker Hub.
+   * @param tag Desired tag. This parameter is optiona. If not present, latest will be used.
+   * @return Return asynchronously the information of the new image.
+   */
   @PUT
   @Path("images/{imageName}")
   @Produces(MediaType.APPLICATION_JSON)
@@ -103,6 +114,11 @@ public class RepositoryServiceProviderService {
     return output;
   }
 
+  /**
+   * Delete an image provided its id.
+   * @param imageId Image Id to delete.
+   * @return Success status.
+   */
   @DELETE
   @Path("images/{imageId}")
   @Produces(MediaType.APPLICATION_JSON)
@@ -111,48 +127,11 @@ public class RepositoryServiceProviderService {
     return provider.delete(imageId);
   }
 
-
-  @GET
-  @Path("log")
-  @Produces(MediaType.TEXT_PLAIN)
-  @Consumes(MediaType.APPLICATION_JSON)
-  public String log(String parameters) {
-    return "Got it!";
-  }
-
-
-  @GET
-  @Path("space")
-  @Produces(MediaType.APPLICATION_JSON)
-  public String space() {
-    return "Got it!";
-  }
-
-
-  @GET
-  @Path("external")
-  @Produces(MediaType.APPLICATION_JSON)
-  public String external() {
-    return "Got it!";
-  }
-
-
-  @GET
-  @Path("external/{repoId}")
-  @Produces(MediaType.APPLICATION_JSON)
-  public String externalSearch(@PathParam("repoId") String repoId) {
-    return "Got it!";
-  }
-
-
-  @GET
-  @Path("external/{repoId}/{imageId}")
-  @Produces(MediaType.APPLICATION_JSON)
-  public String externalPull(@PathParam("repoId") String repoId,
-                             @PathParam("imageId") String imageId) {
-    return "Got it!";
-  }
-
+  /**
+   * Webhook that will be called when a new image is pushed or updated to the Indigo repository.
+   * @param token The secret token needed to verify the origin of the call.
+   * @param payload The webhook payload sent by DockerHub.
+   */
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
@@ -169,15 +148,6 @@ public class RepositoryServiceProviderService {
     } else {
       throw new NotAuthorizedException("Authorization token needed");
     }
-  }
-
-  @POST
-  @Consumes(MediaType.TEXT_PLAIN)
-  @Produces(MediaType.APPLICATION_JSON)
-  @Path("sync")
-  @Authorized
-  public String sync() {
-    return provider.sync(dockerClient.listImagesCmd().exec(), dockerClient);
   }
 
 }
