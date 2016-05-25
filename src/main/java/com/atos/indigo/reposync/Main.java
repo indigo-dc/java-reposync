@@ -33,7 +33,11 @@ public class Main {
             URI.create(ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_REST_ENDPOINT)), rc);
   }
 
-
+  /**
+   * Execute a standalone Grizzly server
+   * @throws IOException
+   * @throws ConfigurationException
+   */
   public static void execServer() throws IOException, ConfigurationException {
     final HttpServer server = startServer();
     System.out.println(String.format("Jersey app started in Grizzly with WADL available at "

@@ -66,6 +66,11 @@ public class ConfigurationManager {
     loadConfig(readConfig());
   }
 
+  /**
+   * Gets a property either from the system environment or the system properties
+   * @param property property name
+   * @return the system environment variable or system property found
+   */
   public static String getProperty(String property) {
     String prop = System.getenv(property);
     if (prop != null) {
