@@ -37,7 +37,8 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
   public static final String DOCKER_ID = "DOCKER_ID";
   public static final String DOCKER_NAME = "DOCKER_NAME";
   public static final String DOCKER_TAG = "DOCKER_TAG";
-  private static final Logger logger = LoggerFactory.getLogger(OpenNebulaRepositoryServiceProvider.class);
+  private static final Logger logger = LoggerFactory.getLogger(
+          OpenNebulaRepositoryServiceProvider.class);
   private static final String ONE_XMLRPC = ConfigurationManager.getProperty("ONE_XMLRPC");
   private static final String ONE_AUTH = ConfigurationManager.getProperty("ONE_AUTH");
 
@@ -162,7 +163,8 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
   }
 
   @Override
-  public String externalPull(@PathParam("repoId") String repoId, @PathParam("imageId") String imageId) {
+  public String externalPull(@PathParam("repoId") String repoId,
+                             @PathParam("imageId") String imageId) {
     return null;
   }
 
@@ -243,23 +245,29 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
   }
 
   @Override
-  public ImageInfoBean imageUpdated(String imageName, String tag, InspectImageResponse img, DockerClient client) {
+  public ImageInfoBean imageUpdated(String imageName, String tag,
+                                    InspectImageResponse img, DockerClient client) {
     try {
       List<ImageInfoBean> images = images(null);
       boolean create = true;
       Client oneClient = createClient();
       ImagePool imgClient = new ImagePool(oneClient);
       for (ImageInfoBean oneImage : images) {
-        if (oneImage.getType().equals(ImageInfoBean.ImageType.DOCKER) &&
-                oneImage.getDockerName().equals(imageName) && oneImage.getDockerTag().equals(tag)) {
+        if (oneImage.getType().equals(ImageInfoBean.ImageType.DOCKER)
+                && oneImage.getDockerName().equals(imageName)
+                && oneImage.getDockerTag().equals(tag)) {
           if (img.getId().equals(oneImage.getDockerId())) {
             return oneImage;
           } else {
-            org.opennebula.client.image.Image realImage = imgClient.getById(new Integer(oneImage.getId()));
+
+            org.opennebula.client.image.Image realImage = imgClient.getById(
+                    new Integer(oneImage.getId()));
+
             if (realImage != null) {
               OneResponse deleteResponse = realImage.delete();
               if (deleteResponse.isError()) {
-                logger.error("Error deleting obsolete image " + realImage.getId() + ": " + deleteResponse.getErrorMessage());
+                logger.error("Error deleting obsolete image " + realImage.getId() + ": "
+                        + deleteResponse.getErrorMessage());
                 create = false;
               }
             }
@@ -276,7 +284,8 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
     return null;
   }
 
-  private ImageInfoBean addImage(String imageName, String tag, InspectImageResponse img, Client oneClient) {
+  private ImageInfoBean addImage(String imageName, String tag,
+                                 InspectImageResponse img, Client oneClient) {
 
     Integer dockerStoreId = getDockerDatastoreId(oneClient);
 
@@ -292,7 +301,9 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
               .addProperty(DOCKER_TAG, tag)
               .generate();
 
-      OneResponse result = org.opennebula.client.image.Image.allocate(oneClient, template, dockerStoreId);
+      OneResponse result = org.opennebula.client.image.Image.allocate(
+              oneClient, template, dockerStoreId);
+
       if (result.isError()) {
         logger.error(result.getErrorMessage());
       } else {

@@ -30,5 +30,6 @@ public interface RepositoryServiceProvider {
 
   String sync(List<Image> imageSummaries, DockerClient client);
 
-  ImageInfoBean imageUpdated(String imageName, String tag, InspectImageResponse img, DockerClient client);
+  ImageInfoBean imageUpdated(String imageName, String tag,
+                             InspectImageResponse img, DockerClient client);
 }

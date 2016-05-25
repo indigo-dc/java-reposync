@@ -29,14 +29,16 @@ public class Main {
 
     // create and start a new instance of grizzly http server
     // exposing the Jersey application at BASE_URI
-    return GrizzlyHttpServerFactory.createHttpServer(URI.create(ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_REST_ENDPOINT)), rc);
+    return GrizzlyHttpServerFactory.createHttpServer(
+            URI.create(ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_REST_ENDPOINT)), rc);
   }
 
 
   public static void execServer() throws IOException, ConfigurationException {
     final HttpServer server = startServer();
     System.out.println(String.format("Jersey app started in Grizzly with WADL available at "
-            + "%sapplication.wadl\nHit enter to stop it...", ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_REST_ENDPOINT)));
+            + "%sapplication.wadl\nHit enter to stop it...", ConfigurationManager.getProperty(
+            ReposyncTags.REPOSYNC_REST_ENDPOINT)));
     System.in.read();
     server.stop();
   }

@@ -35,7 +35,8 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
   public static final String DOCKER_IMAGE_NAME = "dockername";
   public static final String DOCKER_IMAGE_TAG = "dockertag";
   private static final String ENDPOINT = ConfigurationManager.getProperty("OS_AUTH_URL");
-  private static final String PROJECT_DOMAIN = ConfigurationManager.getProperty("OS_PROJECT_DOMAIN_NAME");
+  private static final String PROJECT_DOMAIN =
+          ConfigurationManager.getProperty("OS_PROJECT_DOMAIN_NAME");
   private static final String PROJECT = ConfigurationManager.getProperty("OS_PROJECT_NAME");
   private static final String DOMAIN = ConfigurationManager.getProperty("OS_USER_DOMAIN_NAME");
   private static final String ADMIN_USER_VAR = "OS_USERNAME";
@@ -44,11 +45,12 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
 
   private OSClient getClient(String username, String password) {
 
-    OSClient client = OSFactory.builderV3().
-            endpoint(ENDPOINT).
-            credentials(username, password, Identifier.byName(DOMAIN)).
-            withConfig(Config.DEFAULT.withSSLVerificationDisabled()).
-            scopeToProject(Identifier.byName(PROJECT), Identifier.byName(PROJECT_DOMAIN)).authenticate();
+    OSClient client = OSFactory.builderV3()
+            .endpoint(ENDPOINT)
+            .credentials(username, password, Identifier.byName(DOMAIN))
+            .withConfig(Config.DEFAULT.withSSLVerificationDisabled())
+            .scopeToProject(Identifier.byName(PROJECT), Identifier.byName(PROJECT_DOMAIN))
+            .authenticate();
     return client;
   }
 
@@ -154,31 +156,33 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
   }
 
   @Override
-  public String sync(List<com.github.dockerjava.api.model.Image> imageSummaries, DockerClient dockerClient) {
-        /*String adminUser = System.getenv(ADMIN_USER_VAR);
-        String adminPass = System.getenv(ADMIN_PASS_VAR);
+  public String sync(List<com.github.dockerjava.api.model.Image> imageSummaries,
+                     DockerClient dockerClient) {
+    /*String adminUser = System.getenv(ADMIN_USER_VAR);
+    String adminPass = System.getenv(ADMIN_PASS_VAR);
 
-        if (adminUser != null && adminPass != null) {
-            ImageService api = getClient(adminUser, adminPass).images();
-            List<? extends Image> imageList = api.listAll();
+    if (adminUser != null && adminPass != null) {
+        ImageService api = getClient(adminUser, adminPass).images();
+        List<? extends Image> imageList = api.listAll();
 
-            for (com.github.dockerjava.api.model.Image img : imageSummaries) {
-                Image found = findImage(img.getId(), imageList);
-                if (found == null) {
-                    try {
-                        addImage(img, api, dockerClient);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+        for (com.github.dockerjava.api.model.Image img : imageSummaries) {
+            Image found = findImage(img.getId(), imageList);
+            if (found == null) {
+                try {
+                    addImage(img, api, dockerClient);
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
-        }*/
+        }
+    }*/
 
     return null;
   }
 
   @Override
-  public ImageInfoBean imageUpdated(String imageName, String tag, InspectImageResponse img, DockerClient restClient) {
+  public ImageInfoBean imageUpdated(String imageName, String tag, InspectImageResponse img,
+                                    DockerClient restClient) {
     ImageService client = getAdminClient();
     if (client != null) {
       ImageInfoBean foundImg = findImage(imageName, tag, client.listAll());
@@ -203,7 +207,8 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
     return null;
   }
 
-  private Image addImage(String name, String tag, String id, ImageService api, DockerClient restClient) throws IOException {
+  private Image addImage(String name, String tag, String id, ImageService api,
+                         DockerClient restClient) throws IOException {
 
     System.out.println("Adding image " + id);
 

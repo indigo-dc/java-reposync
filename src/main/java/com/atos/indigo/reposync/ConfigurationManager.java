@@ -1,5 +1,8 @@
 package com.atos.indigo.reposync;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -11,11 +14,14 @@ import java.util.Properties;
 public class ConfigurationManager {
 
   public static final String[] BASE_PROPERTIES = new String[]{
-          ReposyncTags.REPOSYNC_TOKEN, ReposyncTags.REPOSYNC_REST_ENDPOINT, ReposyncTags.REPOSYNC_BACKEND};
+          ReposyncTags.REPOSYNC_TOKEN, ReposyncTags.REPOSYNC_REST_ENDPOINT,
+          ReposyncTags.REPOSYNC_BACKEND};
   public static final String[] OPENSTACK_PROPERTIES = new String[]{
-          "OS_PROJECT_DOMAIN_NAME", "OS_USER_DOMAIN_NAME", "OS_PROJECT_NAME", "OS_USERNAME", "OS_PASSWORD", "OS_AUTH_URL",
+          "OS_PROJECT_DOMAIN_NAME", "OS_USER_DOMAIN_NAME", "OS_PROJECT_NAME",
+          "OS_USERNAME", "OS_PASSWORD", "OS_AUTH_URL",
           "OS_IDENTITY_API_VERSION", "OS_IMAGE_API_VERSION", "OS_CACERT"};
   public static final String[] OPENNEBULA_PROPERTIES = new String[]{"ONE_XMLRPC", "ONE_AUTH"};
+  private static final Logger logger = LoggerFactory.getLogger(ConfigurationManager.class);
   // Base URI the Grizzly HTTP server will listen on
   private static final String HOME_PATH = System.getProperty("user.home");
   static final String CONFIG_PATH = HOME_PATH + "/.reposync.properties";
@@ -27,7 +33,7 @@ public class ConfigurationManager {
       try {
         result.load(new FileReader(configFile));
       } catch (IOException e) {
-
+        logger.error("Error trying to load config file", e);
       }
     }
     return result;
