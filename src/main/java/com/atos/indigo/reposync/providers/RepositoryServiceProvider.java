@@ -14,23 +14,22 @@ import java.util.List;
 public interface RepositoryServiceProvider {
 
 
-    List<ImageInfoBean> images(String parameters);
+  List<ImageInfoBean> images(String parameters);
 
-    String pull(String imageName);
+  ActionResponseBean delete(String imageId);
 
-    ActionResponseBean delete(String imageId);
+  String log(String parameters);
 
-    String log(String parameters);
+  String space();
 
-    String space();
+  String external();
 
-    String external();
+  String externalSearch(String repoId);
 
-    String externalSearch(String repoId);
+  String externalPull(String repoId, String imageId);
 
-    String externalPull(String repoId, String imageId);
+  String sync(List<Image> imageSummaries, DockerClient client);
 
-    String sync(List<Image> imageSummaries, DockerClient client);
-
-    ImageInfoBean imageUpdated(InspectImageResponse img, DockerClient client);
+  ImageInfoBean imageUpdated(String imageName, String tag,
+                             InspectImageResponse img, DockerClient client);
 }

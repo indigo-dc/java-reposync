@@ -1,64 +1,76 @@
 package com.atos.indigo.reposync.beans;
 
-import java.util.List;
-
 /**
  * Created by jose on 9/05/16.
  */
 public class ImageInfoBean {
 
-    public enum ImageType {
-        VM,
-        DOCKER
-    }
+  private String id;
+  private String name;
+  private ImageType type;
+  private String dockerId;
+  private String dockerName;
+  private String dockerTag;
+  private String comment;
 
-    private String id;
+  public String getId() {
+    return id;
+  }
 
-    private String name;
+  public void setId(String id) {
+    this.id = id;
+  }
 
-    private ImageType type;
+  public String getName() {
+    return name;
+  }
 
-    private List<String> tags;
+  public void setName(String name) {
+    this.name = name;
+  }
 
-    private String comment;
+  public ImageType getType() {
+    return type;
+  }
 
-    public String getId() {
-        return id;
-    }
+  public void setType(ImageType type) {
+    this.type = type;
+  }
 
-    public void setId(String id) {
-        this.id = id;
-    }
+  public String getDockerTag() {
+    return dockerTag;
+  }
 
-    public String getName() {
-        return name;
-    }
+  public void setDockerTag(String dockerTag) {
+    this.dockerTag = dockerTag;
+  }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+  public String getDockerId() {
+    return dockerId;
+  }
 
-    public ImageType getType() {
-        return type;
-    }
+  public void setDockerId(String dockerId) {
+    this.dockerId = dockerId;
+  }
 
-    public void setType(ImageType type) {
-        this.type = type;
-    }
+  public String getDockerName() {
+    return dockerName;
+  }
 
-    public List<String> getTags() {
-        return tags;
-    }
+  public void setDockerName(String dockerName) {
+    this.dockerName = dockerName;
+  }
 
-    public void setTags(List<String> tags) {
-        this.tags = tags;
-    }
+  public String getComment() {
+    return comment;
+  }
 
-    public String getComment() {
-        return comment;
-    }
+  public void setComment(String comment) {
+    this.comment = comment;
+  }
 
-    public void setComment(String comment) {
-        this.comment = comment;
-    }
+  public enum ImageType {
+    VM,
+    DOCKER
+  }
 }
