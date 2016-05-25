@@ -14,12 +14,12 @@ import java.util.Properties;
 public class ConfigurationManager {
 
   public static final String[] BASE_PROPERTIES = new String[]{
-          ReposyncTags.REPOSYNC_TOKEN, ReposyncTags.REPOSYNC_REST_ENDPOINT,
-          ReposyncTags.REPOSYNC_BACKEND};
+    ReposyncTags.REPOSYNC_TOKEN, ReposyncTags.REPOSYNC_REST_ENDPOINT,
+    ReposyncTags.REPOSYNC_BACKEND};
   public static final String[] OPENSTACK_PROPERTIES = new String[]{
-          "OS_PROJECT_DOMAIN_NAME", "OS_USER_DOMAIN_NAME", "OS_PROJECT_NAME",
-          "OS_USERNAME", "OS_PASSWORD", "OS_AUTH_URL",
-          "OS_IDENTITY_API_VERSION", "OS_IMAGE_API_VERSION", "OS_CACERT"};
+    "OS_PROJECT_DOMAIN_NAME", "OS_USER_DOMAIN_NAME", "OS_PROJECT_NAME",
+    "OS_USERNAME", "OS_PASSWORD", "OS_AUTH_URL",
+    "OS_IDENTITY_API_VERSION", "OS_IMAGE_API_VERSION", "OS_CACERT"};
   public static final String[] OPENNEBULA_PROPERTIES = new String[]{"ONE_XMLRPC", "ONE_AUTH"};
   private static final Logger logger = LoggerFactory.getLogger(ConfigurationManager.class);
   // Base URI the Grizzly HTTP server will listen on

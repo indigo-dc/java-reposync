@@ -43,10 +43,10 @@ public class RepositoryServiceProviderService {
   private static final Logger logger = LoggerFactory.getLogger(RepositoryServiceProvider.class);
 
   RepositoryServiceProvider provider =
-          (ReposyncTags.REPOSYNC_BACKEND_OS.toLowerCase().equals(
-                  System.getProperty(ReposyncTags.REPOSYNC_BACKEND).toLowerCase())) ?
-                  new OpenStackRepositoryServiceProvider() :
-                  new OpenNebulaRepositoryServiceProvider();
+    (ReposyncTags.REPOSYNC_BACKEND_OS.toLowerCase().equals(
+      System.getProperty(ReposyncTags.REPOSYNC_BACKEND).toLowerCase()))
+      ? new OpenStackRepositoryServiceProvider()
+      : new OpenNebulaRepositoryServiceProvider();
   DockerClient dockerClient = DockerClientBuilder.getInstance().build();
 
   @GET
