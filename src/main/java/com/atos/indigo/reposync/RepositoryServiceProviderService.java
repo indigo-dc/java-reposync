@@ -40,144 +40,144 @@ import javax.ws.rs.core.MediaType;
 @Singleton
 public class RepositoryServiceProviderService {
 
-    private static final Logger logger = LoggerFactory.getLogger(RepositoryServiceProvider.class);
+  private static final Logger logger = LoggerFactory.getLogger(RepositoryServiceProvider.class);
 
-    RepositoryServiceProvider provider =
-            (ReposyncTags.REPOSYNC_BACKEND_OS.toLowerCase().equals(
-                    System.getProperty(ReposyncTags.REPOSYNC_BACKEND).toLowerCase())) ?
-                    new OpenStackRepositoryServiceProvider() :
-                    new OpenNebulaRepositoryServiceProvider();
-    DockerClient dockerClient = DockerClientBuilder.getInstance().build();
+  RepositoryServiceProvider provider =
+          (ReposyncTags.REPOSYNC_BACKEND_OS.toLowerCase().equals(
+                  System.getProperty(ReposyncTags.REPOSYNC_BACKEND).toLowerCase())) ?
+                  new OpenStackRepositoryServiceProvider() :
+                  new OpenNebulaRepositoryServiceProvider();
+  DockerClient dockerClient = DockerClientBuilder.getInstance().build();
 
-    @GET
-    @Path("images")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Authorized
-    public List<ImageInfoBean> images(@QueryParam("filter") String filter) {
-        return provider.images(filter);
+  @GET
+  @Path("images")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Authorized
+  public List<ImageInfoBean> images(@QueryParam("filter") String filter) {
+    return provider.images(filter);
+  }
+
+
+  @PUT
+  @Path("images/{imageName}")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Authorized
+  public ChunkedOutput<ImageInfoBean> pull(
+          @PathParam("imageName") final String imageName,
+          @QueryParam("tag") final String tag) {
+
+
+    final ChunkedOutput<ImageInfoBean> output = new ChunkedOutput<>(ImageInfoBean.class);
+
+    final PullImageCmd pullCmd = dockerClient.pullImageCmd(imageName);
+
+    if (tag != null) {
+      pullCmd.withTag(tag);
     }
 
+    final String finalTag = (tag != null) ? tag : "latest";
 
-    @PUT
-    @Path("images/{imageName}")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Authorized
-    public ChunkedOutput<ImageInfoBean> pull(
-            @PathParam("imageName") final String imageName,
-            @QueryParam("tag") final String tag) {
-
-
-        final ChunkedOutput<ImageInfoBean> output = new ChunkedOutput<>(ImageInfoBean.class);
-
-        final PullImageCmd pullCmd = dockerClient.pullImageCmd(imageName);
-
-        if (tag != null) {
-            pullCmd.withTag(tag);
+    new Thread() {
+      @Override
+      public void run() {
+        try {
+          pullCmd.exec(new PullImageResultCallback()).awaitSuccess();
+          InspectImageResponse img = dockerClient.inspectImageCmd(imageName).exec();
+          if (img != null) {
+            output.write(provider.imageUpdated(imageName, finalTag, img, dockerClient));
+          }
+        } catch (Exception e) {
+          logger.error("Error pulling image " + imageName + ":" + finalTag, e);
+        } finally {
+          try {
+            output.close();
+          } catch (IOException e) {
+            logger.error("Error writing output response while pull operation", e);
+          }
         }
 
-        final String finalTag = (tag != null) ? tag : "latest";
+      }
+    }.start();
 
-        new Thread() {
-            @Override
-            public void run() {
-                try {
-                    pullCmd.exec(new PullImageResultCallback()).awaitSuccess();
-                    InspectImageResponse img = dockerClient.inspectImageCmd(imageName).exec();
-                    if (img != null) {
-                        output.write(provider.imageUpdated(imageName, finalTag, img, dockerClient));
-                    }
-                } catch (Exception e) {
-                    logger.error("Error pulling image " + imageName + ":" + finalTag, e);
-                } finally {
-                    try {
-                        output.close();
-                    } catch (IOException e) {
-                        logger.error("Error writing output response while pull operation", e);
-                    }
-                }
+    return output;
+  }
 
-            }
-        }.start();
+  @DELETE
+  @Path("images/{imageId}")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Authorized
+  public ActionResponseBean delete(@PathParam("imageId") String imageId) {
+    return provider.delete(imageId);
+  }
 
-        return output;
+
+  @GET
+  @Path("log")
+  @Produces(MediaType.TEXT_PLAIN)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public String log(String parameters) {
+    return "Got it!";
+  }
+
+
+  @GET
+  @Path("space")
+  @Produces(MediaType.APPLICATION_JSON)
+  public String space() {
+    return "Got it!";
+  }
+
+
+  @GET
+  @Path("external")
+  @Produces(MediaType.APPLICATION_JSON)
+  public String external() {
+    return "Got it!";
+  }
+
+
+  @GET
+  @Path("external/{repoId}")
+  @Produces(MediaType.APPLICATION_JSON)
+  public String externalSearch(@PathParam("repoId") String repoId) {
+    return "Got it!";
+  }
+
+
+  @GET
+  @Path("external/{repoId}/{imageId}")
+  @Produces(MediaType.APPLICATION_JSON)
+  public String externalPull(@PathParam("repoId") String repoId,
+                             @PathParam("imageId") String imageId) {
+    return "Got it!";
+  }
+
+  @POST
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  @Path("notify")
+  public void notify(@QueryParam("token") String token, ObjectNode payload) {
+    if (token != null && token.equals(System.getProperty(ReposyncTags.REPOSYNC_TOKEN))) {
+      JsonNode pushData = payload.get("push_data");
+      String tag = pushData.get("tag").asText();
+
+      JsonNode repoInfo = payload.get("repository");
+      String repoName = repoInfo.get("repo_name").asText();
+
+      ChunkedOutput<ImageInfoBean> result = pull(repoName, tag);
+    } else {
+      throw new NotAuthorizedException("Authorization token needed");
     }
+  }
 
-    @DELETE
-    @Path("images/{imageId}")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Authorized
-    public ActionResponseBean delete(@PathParam("imageId") String imageId) {
-        return provider.delete(imageId);
-    }
-
-
-    @GET
-    @Path("log")
-    @Produces(MediaType.TEXT_PLAIN)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public String log(String parameters) {
-        return "Got it!";
-    }
-
-
-    @GET
-    @Path("space")
-    @Produces(MediaType.APPLICATION_JSON)
-    public String space() {
-        return "Got it!";
-    }
-
-
-    @GET
-    @Path("external")
-    @Produces(MediaType.APPLICATION_JSON)
-    public String external() {
-        return "Got it!";
-    }
-
-
-    @GET
-    @Path("external/{repoId}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public String externalSearch(@PathParam("repoId") String repoId) {
-        return "Got it!";
-    }
-
-
-    @GET
-    @Path("external/{repoId}/{imageId}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public String externalPull(@PathParam("repoId") String repoId,
-                               @PathParam("imageId") String imageId) {
-        return "Got it!";
-    }
-
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("notify")
-    public void notify(@QueryParam("token") String token, ObjectNode payload) {
-        if (token != null && token.equals(System.getProperty(ReposyncTags.REPOSYNC_TOKEN))) {
-            JsonNode pushData = payload.get("push_data");
-            String tag = pushData.get("tag").asText();
-
-            JsonNode repoInfo = payload.get("repository");
-            String repoName = repoInfo.get("repo_name").asText();
-
-            ChunkedOutput<ImageInfoBean> result = pull(repoName, tag);
-        } else {
-            throw new NotAuthorizedException("Authorization token needed");
-        }
-    }
-
-    @POST
-    @Consumes(MediaType.TEXT_PLAIN)
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("sync")
-    @Authorized
-    public String sync() {
-        return provider.sync(dockerClient.listImagesCmd().exec(), dockerClient);
-    }
+  @POST
+  @Consumes(MediaType.TEXT_PLAIN)
+  @Produces(MediaType.APPLICATION_JSON)
+  @Path("sync")
+  @Authorized
+  public String sync() {
+    return provider.sync(dockerClient.listImagesCmd().exec(), dockerClient);
+  }
 
 }

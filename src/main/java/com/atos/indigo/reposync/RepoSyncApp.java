@@ -13,18 +13,18 @@ import javax.ws.rs.core.Application;
  */
 public class RepoSyncApp extends Application {
 
-    //Add Service APIs
-    @Override
-    public Set<Class<?>> getClasses() {
-        Set<Class<?>> resources = new HashSet<Class<?>>();
+  //Add Service APIs
+  @Override
+  public Set<Class<?>> getClasses() {
+    Set<Class<?>> resources = new HashSet<Class<?>>();
 
-        //register REST modules
-        resources.add(RepositoryServiceProviderService.class);
+    //register REST modules
+    resources.add(RepositoryServiceProviderService.class);
 
-        //Manually adding JacksonJSONFeature
-        resources.add(JacksonFeatures.class);
-        resources.add(JacksonJsonProvider.class);
+    //Manually adding JacksonJSONFeature
+    resources.add(JacksonFeatures.class);
+    resources.add(JacksonJsonProvider.class);
 
-        return resources;
-    }
+    return resources;
+  }
 }
