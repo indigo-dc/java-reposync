@@ -118,31 +118,6 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
     return result;
   }
 
-  @Override
-  public String log(String parameters) {
-    return null;
-  }
-
-  @Override
-  public String space() {
-    return null;
-  }
-
-  @Override
-  public String external() {
-    return null;
-  }
-
-  @Override
-  public String externalSearch(String repoId) {
-    return null;
-  }
-
-  @Override
-  public String externalPull(String repoId, String imageId) {
-    return null;
-  }
-
   private ImageInfoBean findImage(String imageName, String tag, List<? extends Image> imageList) {
     for (Image img : imageList) {
       ImageInfoBean imgInfo = getImageInfo(img);

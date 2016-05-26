@@ -150,4 +150,11 @@ public class RepositoryServiceProviderService {
     }
   }
 
+  public void setProvider(RepositoryServiceProvider provider) {
+    this.provider = provider;
+  }
+
+  public void setDockerClient(DockerClient dockerClient) {
+    this.dockerClient = dockerClient;
+  }
 }

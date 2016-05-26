@@ -18,16 +18,6 @@ public interface RepositoryServiceProvider {
 
   ActionResponseBean delete(String imageId);
 
-  String log(String parameters);
-
-  String space();
-
-  String external();
-
-  String externalSearch(String repoId);
-
-  String externalPull(String repoId, String imageId);
-
   String sync(List<Image> imageSummaries, DockerClient client);
 
   ImageInfoBean imageUpdated(String imageName, String tag,
