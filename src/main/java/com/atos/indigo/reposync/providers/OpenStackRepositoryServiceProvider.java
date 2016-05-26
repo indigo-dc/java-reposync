@@ -1,5 +1,6 @@
 package com.atos.indigo.reposync.providers;
 
+import com.atos.indigo.reposync.ConfigurationException;
 import com.atos.indigo.reposync.ConfigurationManager;
 import com.atos.indigo.reposync.beans.ActionResponseBean;
 import com.atos.indigo.reposync.beans.ImageInfoBean;
@@ -18,18 +19,22 @@ import org.openstack4j.model.image.ContainerFormat;
 import org.openstack4j.model.image.DiskFormat;
 import org.openstack4j.model.image.Image;
 import org.openstack4j.openstack.OSFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * Created by jose on 25/04/16.
  */
 public class OpenStackRepositoryServiceProvider implements RepositoryServiceProvider {
+
+  private static final Logger logger = LoggerFactory.getLogger(
+      OpenStackRepositoryServiceProvider.class);
 
   public static final String DOCKER_ID = "dockerid";
   public static final String DOCKER_IMAGE_NAME = "dockername";
@@ -43,6 +48,20 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
   private static final String ADMIN_PASS_VAR = "OS_PASSWORD";
   private ObjectMapper mapper = new ObjectMapper();
 
+  private ImageService client = null;
+
+  /**
+   * Default constructor using the client configuration defined in the system.
+   * @throws ConfigurationException If the configuration is not found or incorrect.
+   */
+  public OpenStackRepositoryServiceProvider() throws ConfigurationException {
+    this.client = getAdminClient();
+  }
+
+  public OpenStackRepositoryServiceProvider(ImageService client) {
+    this.client = client;
+  }
+
   private OSClient getClient(String username, String password) {
 
     OSClient client = OSFactory.builderV3()
@@ -54,32 +73,27 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
     return client;
   }
 
-  private ImageService getAdminClient() {
+  private ImageService getAdminClient() throws ConfigurationException {
     String adminUser = ConfigurationManager.getProperty(ADMIN_USER_VAR);
     String adminPass = ConfigurationManager.getProperty(ADMIN_PASS_VAR);
 
     if (adminUser != null && adminPass != null) {
       return getClient(adminUser, adminPass).images();
     } else {
-      return null;
+      throw new ConfigurationException("Openstack user and password are mandatory.");
     }
   }
 
   @Override
   public List<ImageInfoBean> images(String filter) {
     List<ImageInfoBean> result = new ArrayList<>();
-    ImageService api = getAdminClient();
-    if (api != null) {
-      List<? extends Image> images = api.listAll();
-      if (images != null) {
-        Pattern pattern = null;
-        if (filter != null) {
-          pattern = Pattern.compile(filter);
-        }
-        for (Image img : images) {
-          if ((pattern != null && pattern.matcher(img.getName()).matches()) || pattern == null) {
-            result.add(getImageInfo(img));
-          }
+    List<? extends Image> images = client.listAll();
+    if (images != null) {
+      for (Image img : images) {
+        if ((filter != null && img.getName().matches(
+            filter.replace("?", ".?").replace("*", ".*?")))
+            || filter == null) {
+          result.add(getImageInfo(img));
         }
       }
     }
@@ -110,7 +124,6 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
 
   @Override
   public ActionResponseBean delete(String imageId) {
-    ImageService client = getAdminClient();
     ActionResponse opResult = client.delete(imageId);
     ActionResponseBean result = new ActionResponseBean();
     result.setSuccess(opResult.isSuccess());
@@ -158,26 +171,23 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
   @Override
   public ImageInfoBean imageUpdated(String imageName, String tag, InspectImageResponse img,
                                     DockerClient restClient) {
-    ImageService client = getAdminClient();
-    if (client != null) {
-      ImageInfoBean foundImg = findImage(imageName, tag, client.listAll());
-      if (foundImg != null) {
-        if (!img.getId().equals(foundImg.getDockerId())) {
-          ActionResponse response = client.delete(foundImg.getId());
-          if (!response.isSuccess()) {
-            System.out.println("Error deleting updated image: " + response.getFault());
-            return null;
-          }
-        } else {
-          return foundImg;
+    ImageInfoBean foundImg = findImage(imageName, tag, client.listAll());
+    if (foundImg != null) {
+      if (!img.getId().equals(foundImg.getDockerId())) {
+        ActionResponse response = client.delete(foundImg.getId());
+        if (!response.isSuccess()) {
+          System.out.println("Error deleting updated image: " + response.getFault());
+          return null;
         }
+      } else {
+        return foundImg;
       }
+    }
 
-      try {
-        return getImageInfo(addImage(imageName, tag, img.getId(), client, restClient));
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
+    try {
+      return getImageInfo(addImage(imageName, tag, img.getId(), client, restClient));
+    } catch (IOException e) {
+      e.printStackTrace();
     }
     return null;
   }

@@ -42,12 +42,20 @@ public class RepositoryServiceProviderService {
 
   private static final Logger logger = LoggerFactory.getLogger(RepositoryServiceProvider.class);
 
-  RepositoryServiceProvider provider =
-      (ReposyncTags.REPOSYNC_BACKEND_OS.toLowerCase().equals(
-        System.getProperty(ReposyncTags.REPOSYNC_BACKEND).toLowerCase()))
-        ? new OpenStackRepositoryServiceProvider()
-        : new OpenNebulaRepositoryServiceProvider();
+  RepositoryServiceProvider provider = null;
+
   DockerClient dockerClient = DockerClientBuilder.getInstance().build();
+
+  /**
+   * Configure the default backend reading the system configuration.
+   * @throws ConfigurationException If the configuration is not defined or is not correct.
+   */
+  public RepositoryServiceProviderService() throws ConfigurationException {
+    this.provider = (ReposyncTags.REPOSYNC_BACKEND_OS.toLowerCase().equals(
+      System.getProperty(ReposyncTags.REPOSYNC_BACKEND).toLowerCase()))
+      ? new OpenStackRepositoryServiceProvider()
+      : new OpenNebulaRepositoryServiceProvider();
+  }
 
   /**
    * Get a list of images present in the IaaS platform filtering by name.

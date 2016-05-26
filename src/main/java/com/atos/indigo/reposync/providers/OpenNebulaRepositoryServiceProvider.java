@@ -47,6 +47,9 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
   private DatastorePool dataPool;
 
 
+  /**
+   * Default constructor using the system configuration.
+   */
   public OpenNebulaRepositoryServiceProvider() {
     try {
       this.client = new Client(readCredentials(ONE_AUTH), ONE_XMLRPC);
@@ -57,7 +60,12 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
     }
   }
 
-  // For testing purposes
+  /**
+   * Constructor for testing purposes.
+   * @param client Client stub.
+   * @param imgPool ImagePool stub.
+   * @param dataPool DatastorePool stub.
+   */
   public OpenNebulaRepositoryServiceProvider(Client client, ImagePool imgPool,
                                              DatastorePool dataPool) {
     this.client = client;
@@ -98,7 +106,7 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
       while (imgResponse != null && imgResponse.hasNext()) {
         org.opennebula.client.image.Image img = imgResponse.next();
         if (parameters == null || (parameters != null && img.getName().matches(
-          parameters.replace("?", ".?").replace("*", ".*?")))) {
+            parameters.replace("?", ".?").replace("*", ".*?")))) {
           ImageInfoBean imgInfo = new ImageInfoBean();
           imgInfo.setId(img.getId());
           imgInfo.setName(img.getName());
@@ -157,7 +165,7 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
         }
       }
     } else {
-      logger.error("Can't retrieve datastore information: "+poolInfo.getErrorMessage());
+      logger.error("Can't retrieve datastore information: " + poolInfo.getErrorMessage());
     }
 
     return null;
@@ -195,34 +203,34 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
   @Override
   public ImageInfoBean imageUpdated(String imageName, String tag,
                                     InspectImageResponse img, DockerClient client) {
-      List<ImageInfoBean> images = images(null);
-      boolean create = true;
-      for (ImageInfoBean oneImage : images) {
-        if (oneImage.getType().equals(ImageInfoBean.ImageType.DOCKER)
-                && oneImage.getDockerName().equals(imageName)
-                && oneImage.getDockerTag().equals(tag)) {
-          if (img.getId().equals(oneImage.getDockerId())) {
-            return oneImage;
-          } else {
+    List<ImageInfoBean> images = images(null);
+    boolean create = true;
+    for (ImageInfoBean oneImage : images) {
+      if (oneImage.getType().equals(ImageInfoBean.ImageType.DOCKER)
+              && oneImage.getDockerName().equals(imageName)
+              && oneImage.getDockerTag().equals(tag)) {
+        if (img.getId().equals(oneImage.getDockerId())) {
+          return oneImage;
+        } else {
 
-            org.opennebula.client.image.Image realImage = imgPool.getById(
-                    new Integer(oneImage.getId()));
+          org.opennebula.client.image.Image realImage = imgPool.getById(
+                  new Integer(oneImage.getId()));
 
-            if (realImage != null) {
-              OneResponse deleteResponse = realImage.delete();
-              if (deleteResponse.isError()) {
-                logger.error("Error deleting obsolete image " + realImage.getId() + ": "
-                        + deleteResponse.getErrorMessage());
-                create = false;
-              }
+          if (realImage != null) {
+            OneResponse deleteResponse = realImage.delete();
+            if (deleteResponse.isError()) {
+              logger.error("Error deleting obsolete image " + realImage.getId() + ": "
+                      + deleteResponse.getErrorMessage());
+              create = false;
             }
           }
         }
       }
+    }
 
-      if (create) {
-        return addImage(imageName, tag, img);
-      }
+    if (create) {
+      return addImage(imageName, tag, img);
+    }
 
     return null;
   }
