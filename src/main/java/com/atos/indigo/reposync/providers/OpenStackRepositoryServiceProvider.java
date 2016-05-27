@@ -144,31 +144,6 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
   }
 
   @Override
-  public String sync(List<com.github.dockerjava.api.model.Image> imageSummaries,
-                     DockerClient dockerClient) {
-    /*String adminUser = System.getenv(ADMIN_USER_VAR);
-    String adminPass = System.getenv(ADMIN_PASS_VAR);
-
-    if (adminUser != null && adminPass != null) {
-        ImageService api = getClient(adminUser, adminPass).images();
-        List<? extends Image> imageList = api.listAll();
-
-        for (com.github.dockerjava.api.model.Image img : imageSummaries) {
-            Image found = findImage(img.getId(), imageList);
-            if (found == null) {
-                try {
-                    addImage(img, api, dockerClient);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }*/
-
-    return null;
-  }
-
-  @Override
   public ImageInfoBean imageUpdated(String imageName, String tag, InspectImageResponse img,
                                     DockerClient restClient) {
     ImageInfoBean foundImg = findImage(imageName, tag, client.listAll());
@@ -176,7 +151,7 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
       if (!img.getId().equals(foundImg.getDockerId())) {
         ActionResponse response = client.delete(foundImg.getId());
         if (!response.isSuccess()) {
-          System.out.println("Error deleting updated image: " + response.getFault());
+          logger.error("Error deleting updated image: " + response.getFault());
           return null;
         }
       } else {
@@ -195,8 +170,6 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
   private Image addImage(String name, String tag, String id, ImageService api,
                          DockerClient restClient) throws IOException {
 
-    System.out.println("Adding image " + id);
-
     InputStream responseStream = restClient.saveImageCmd(id).exec();
     if (responseStream != null) {
       org.openstack4j.model.common.Payload payload = Payloads.create(responseStream);
@@ -207,7 +180,6 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
               .property(DOCKER_IMAGE_NAME, name)
               .property(DOCKER_IMAGE_TAG, tag)
               .property("hypervisor_type", "docker").build(), payload);
-      System.out.println("Created image " + result.getId());
       return result;
     } else {
       return null;

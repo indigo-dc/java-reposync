@@ -19,12 +19,19 @@ public class Main {
    *
    * @return Grizzly HTTP server.
    */
-  public static HttpServer startServer() throws ConfigurationException {
+  public static HttpServer startServer(RepositoryServiceProviderService svc)
+    throws ConfigurationException {
     // create a resource config that scans for JAX-RS resources and providers
     // in com.atos.indigo.reposync package
-    ConfigurationManager.loadConfig();
-    final ResourceConfig rc = new ResourceConfig().packages(BASE_PKG);
-    rc.register(AuthorizationRequestFilter.class);
+    ResourceConfig rc = new ResourceConfig();
+    if (svc == null) {
+      ConfigurationManager.loadConfig();
+      rc.packages(BASE_PKG);
+      rc.register(AuthorizationRequestFilter.class);
+    } else {
+      // For testing purposes
+      rc.register(svc);
+    }
 
 
     // create and start a new instance of grizzly http server
@@ -39,7 +46,7 @@ public class Main {
    * @throws ConfigurationException If some needed properties are not found.
    */
   public static void execServer() throws IOException, ConfigurationException {
-    final HttpServer server = startServer();
+    final HttpServer server = startServer(null);
     System.out.println(String.format("Jersey app started in Grizzly with WADL available at "
             + "%sapplication.wadl\nHit enter to stop it...", ConfigurationManager.getProperty(
             ReposyncTags.REPOSYNC_REST_ENDPOINT)));
