@@ -117,7 +117,10 @@ public class RepositoryServiceProviderService {
       public void run() {
         try {
           pullCmd.exec(new PullImageResultCallback()).awaitSuccess();
-          InspectImageResponse img = dockerClient.inspectImageCmd(imageName+":"+finalTag).exec();
+
+          InspectImageResponse img = dockerClient
+              .inspectImageCmd(imageName + ":" + finalTag).exec();
+
           if (img != null) {
             output.write(provider.imageUpdated(imageName, finalTag, img, dockerClient));
           }
@@ -159,7 +162,9 @@ public class RepositoryServiceProviderService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   @Path("notify")
-  public ChunkedOutput<ImageInfoBean> notify(@QueryParam("token") String token, ObjectNode payload) {
+  public ChunkedOutput<ImageInfoBean> notify(@QueryParam("token") String token,
+                                             ObjectNode payload) {
+
     if (token != null && token.equals(System.getProperty(ReposyncTags.REPOSYNC_TOKEN))) {
       JsonNode pushData = payload.get("push_data");
       String tag = pushData.get("tag").asText();
@@ -199,10 +204,14 @@ public class RepositoryServiceProviderService {
                 dockerClient.pullImageCmd(finalRepo).exec(new PullImageResultCallback())
                   .awaitSuccess();
 
-                List<Image> imageList = dockerClient.listImagesCmd().withImageNameFilter(finalRepo).exec();
+                List<Image> imageList = dockerClient.listImagesCmd()
+                    .withImageNameFilter(finalRepo).exec();
+
                 for (Image currentImg : imageList) {
 
-                  InspectImageResponse img = dockerClient.inspectImageCmd(currentImg.getId()).exec();
+                  InspectImageResponse img = dockerClient.inspectImageCmd(currentImg.getId())
+                      .exec();
+
                   for (String fullName : img.getRepoTags()) {
                     String[] splitName = fullName.split(":");
                     String finalName = splitName[0];
