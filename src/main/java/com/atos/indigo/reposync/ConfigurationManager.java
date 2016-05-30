@@ -1,11 +1,17 @@
 package com.atos.indigo.reposync;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.LineIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -15,7 +21,7 @@ public class ConfigurationManager {
 
   public static final String[] BASE_PROPERTIES = new String[]{
     ReposyncTags.REPOSYNC_TOKEN, ReposyncTags.REPOSYNC_REST_ENDPOINT,
-    ReposyncTags.REPOSYNC_BACKEND};
+    ReposyncTags.REPOSYNC_BACKEND, ReposyncTags.REPOSYNC_REPO_LIST_FILE};
   public static final String[] OPENSTACK_PROPERTIES = new String[]{
     "OS_PROJECT_DOMAIN_NAME", "OS_USER_DOMAIN_NAME", "OS_PROJECT_NAME",
     "OS_USERNAME", "OS_PASSWORD", "OS_AUTH_URL",
@@ -25,6 +31,8 @@ public class ConfigurationManager {
   // Base URI the Grizzly HTTP server will listen on
   private static final String HOME_PATH = System.getProperty("user.home");
   static final String CONFIG_PATH = HOME_PATH + "/.reposync.properties";
+
+  private static ObjectMapper mapper = new ObjectMapper();
 
   private static Properties readConfig() {
     Properties result = new Properties();
@@ -37,6 +45,20 @@ public class ConfigurationManager {
       }
     }
     return result;
+  }
+
+  private static void readSyncRepoList(String repoListFile) throws ConfigurationException {
+    List<String> repoList = new ArrayList<>();
+    File repoFile = new File(repoListFile);
+    try {
+      LineIterator iterator = FileUtils.lineIterator(repoFile);
+      while (iterator.hasNext()) {
+        repoList.add(iterator.nextLine().trim());
+      }
+      System.setProperty(ReposyncTags.REPOSYNC_REPO_LIST, mapper.writeValueAsString(repoList));
+    } catch (IOException e) {
+      throw new ConfigurationException("Can't read repository list file",e);
+    }
   }
 
   private static void loadConfigList(Properties properties, String[] propList) {
@@ -58,7 +80,11 @@ public class ConfigurationManager {
         loadConfigList(properties, OPENNEBULA_PROPERTIES);
       }
     } else {
-      throw new ConfigurationException(ReposyncTags.REPOSYNC_BACKEND);
+      throw ConfigurationException.undefinedProperty(ReposyncTags.REPOSYNC_BACKEND);
+    }
+    String repoList = getProperty(ReposyncTags.REPOSYNC_REPO_LIST_FILE);
+    if (repoList != null) {
+      readSyncRepoList(repoList);
     }
   }
 

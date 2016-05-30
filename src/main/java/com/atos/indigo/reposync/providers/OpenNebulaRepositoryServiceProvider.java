@@ -1,12 +1,14 @@
 package com.atos.indigo.reposync.providers;
 
+import com.atos.indigo.reposync.ConfigurationException;
 import com.atos.indigo.reposync.ConfigurationManager;
 import com.atos.indigo.reposync.beans.ActionResponseBean;
 import com.atos.indigo.reposync.beans.ImageInfoBean;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectImageResponse;
-import com.github.dockerjava.api.model.Image;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.LineIterator;
 import org.opennebula.client.Client;
 import org.opennebula.client.ClientConfigurationException;
 import org.opennebula.client.OneResponse;
@@ -16,9 +18,7 @@ import org.opennebula.client.image.ImagePool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -50,7 +50,7 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
   /**
    * Default constructor using the system configuration.
    */
-  public OpenNebulaRepositoryServiceProvider() {
+  public OpenNebulaRepositoryServiceProvider() throws ConfigurationException {
     try {
       this.client = new Client(readCredentials(ONE_AUTH), ONE_XMLRPC);
       this.imgPool = new ImagePool(client);
@@ -73,28 +73,22 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
     this.dataPool = dataPool;
   }
 
-  private static String readCredentials(String oneAuth) {
+  private static String readCredentials(String oneAuth) throws ConfigurationException {
     if (oneAuth != null) {
       File authFile = new File(oneAuth);
-      if (authFile.exists()) {
-        try {
-          BufferedReader reader = new BufferedReader(new FileReader(authFile));
-          String auth = reader.readLine();
-          if (auth != null && !auth.isEmpty()) {
-            return auth.trim();
-          } else {
-            logger.error("Auth file " + oneAuth + " is empty");
-          }
-        } catch (IOException e) {
-          logger.error("Error reading auth file " + oneAuth, e);
+      try {
+        LineIterator credIterator = FileUtils.lineIterator(authFile);
+        if (credIterator.hasNext()) {
+          return credIterator.nextLine().trim();
+        } else {
+          throw new ConfigurationException("Can't find credentials in auth file " + oneAuth);
         }
-      } else {
-        logger.error("Auth file " + oneAuth + " does not exist");
+      } catch (IOException e) {
+        throw new ConfigurationException("Error reading auth file " + oneAuth, e);
       }
     } else {
-      readCredentials(System.getProperty("user.home") + "/.one/one_auth");
+      throw new ConfigurationException("one_auth file location is not defined");
     }
-    return null;
   }
 
   @Override
@@ -169,35 +163,6 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
     }
 
     return null;
-  }
-
-  @Override
-  public String sync(List<Image> imageSummaries, DockerClient client) {
-
-    Integer dockerStoreId = getDockerDatastoreId();
-
-    List<String> existing = new ArrayList<>();
-    if (dockerStoreId != null) {
-      OneResponse info = imgPool.info();
-      System.out.println(info.getMessage());
-      Iterator<org.opennebula.client.image.Image> imgResponse = imgPool.iterator();
-      while (imgResponse != null && imgResponse.hasNext()) {
-        org.opennebula.client.image.Image img = imgResponse.next();
-        String datastore = img.xpath("DATASTORE_ID");
-        if (datastore != null) {
-          if (dockerStoreId.equals(Integer.parseInt(datastore))) {
-            String imgName = img.xpath("PATH");
-            if (imgName != null && imgName.startsWith(DOCKER_PREFIX)) {
-              existing.add(imgName.substring(DOCKER_PREFIX.length()));
-            }
-          }
-        }
-      }
-
-    }
-
-    return null;
-
   }
 
   @Override

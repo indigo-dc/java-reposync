@@ -5,11 +5,14 @@ import com.atos.indigo.reposync.beans.ImageInfoBean;
 import com.atos.indigo.reposync.providers.OpenNebulaRepositoryServiceProvider;
 import com.atos.indigo.reposync.providers.OpenStackRepositoryServiceProvider;
 import com.atos.indigo.reposync.providers.RepositoryServiceProvider;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectImageResponse;
 import com.github.dockerjava.api.command.PullImageCmd;
+import com.github.dockerjava.api.model.Image;
 import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.core.command.PullImageResultCallback;
 
@@ -20,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.List;
 
-import javax.inject.Singleton;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -37,14 +39,15 @@ import javax.ws.rs.core.MediaType;
  * Root resource (exposed at "v1.0" path)
  */
 @Path("v1.0")
-@Singleton
 public class RepositoryServiceProviderService {
 
   private static final Logger logger = LoggerFactory.getLogger(RepositoryServiceProvider.class);
 
   RepositoryServiceProvider provider = null;
 
-  DockerClient dockerClient = DockerClientBuilder.getInstance().build();
+  DockerClient dockerClient = null;
+
+  ObjectMapper mapper = new ObjectMapper();
 
   /**
    * Configure the default backend reading the system configuration.
@@ -55,6 +58,18 @@ public class RepositoryServiceProviderService {
       System.getProperty(ReposyncTags.REPOSYNC_BACKEND).toLowerCase()))
       ? new OpenStackRepositoryServiceProvider()
       : new OpenNebulaRepositoryServiceProvider();
+
+    this.dockerClient = DockerClientBuilder.getInstance().build();
+  }
+
+  /**
+   * For testing purposes only.
+   * @param provider Mock provider
+   * @param client Mock docker client
+   */
+  public RepositoryServiceProviderService(RepositoryServiceProvider provider, DockerClient client) {
+    this.provider = provider;
+    this.dockerClient = client;
   }
 
   /**
@@ -102,7 +117,10 @@ public class RepositoryServiceProviderService {
       public void run() {
         try {
           pullCmd.exec(new PullImageResultCallback()).awaitSuccess();
-          InspectImageResponse img = dockerClient.inspectImageCmd(imageName).exec();
+
+          InspectImageResponse img = dockerClient
+              .inspectImageCmd(imageName + ":" + finalTag).exec();
+
           if (img != null) {
             output.write(provider.imageUpdated(imageName, finalTag, img, dockerClient));
           }
@@ -144,7 +162,9 @@ public class RepositoryServiceProviderService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   @Path("notify")
-  public void notify(@QueryParam("token") String token, ObjectNode payload) {
+  public ChunkedOutput<ImageInfoBean> notify(@QueryParam("token") String token,
+                                             ObjectNode payload) {
+
     if (token != null && token.equals(System.getProperty(ReposyncTags.REPOSYNC_TOKEN))) {
       JsonNode pushData = payload.get("push_data");
       String tag = pushData.get("tag").asText();
@@ -152,10 +172,70 @@ public class RepositoryServiceProviderService {
       JsonNode repoInfo = payload.get("repository");
       String repoName = repoInfo.get("repo_name").asText();
 
-      ChunkedOutput<ImageInfoBean> result = pull(repoName, tag);
+      return pull(repoName, tag);
     } else {
       throw new NotAuthorizedException("Authorization token needed");
     }
+  }
+
+  /**
+   * Force the synchronization of the configured repositories.
+   * It will pull the images and then execute an update on each of them
+   * @return Asynchronously returns each updated image.
+   */
+  @PUT
+  @Path("sync")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Authorized
+  public ChunkedOutput<ImageInfoBean> sync() {
+
+    final ChunkedOutput<ImageInfoBean> output = new ChunkedOutput<>(ImageInfoBean.class);
+
+    String repoListStr = ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_REPO_LIST);
+    if (repoListStr != null) {
+      try {
+        List<String> repoList = mapper.readValue(repoListStr, new TypeReference<List<String>>(){});
+        for (String repo : repoList) {
+          final String finalRepo = repo;
+          new Thread() {
+            @Override
+            public void run() {
+              synchronized (dockerClient) {
+                dockerClient.pullImageCmd(finalRepo).exec(new PullImageResultCallback())
+                  .awaitSuccess();
+
+                List<Image> imageList = dockerClient.listImagesCmd()
+                    .withImageNameFilter(finalRepo).exec();
+
+                for (Image currentImg : imageList) {
+
+                  InspectImageResponse img = dockerClient.inspectImageCmd(currentImg.getId())
+                      .exec();
+
+                  for (String fullName : img.getRepoTags()) {
+                    String[] splitName = fullName.split(":");
+                    String finalName = splitName[0];
+                    String tag = (splitName.length > 1) ? splitName[1] : "latest";
+                    if (finalName.equals(finalRepo)) {
+                      try {
+                        output.write(provider.imageUpdated(finalName, tag, img, dockerClient));
+                      } catch (IOException e) {
+                        logger.error("Error writing response for image update of " + finalName, e);
+                      }
+                    }
+                  }
+                }
+
+              }
+            }
+          }.start();
+        }
+      } catch (IOException e) {
+        logger.error("Error deserializing respository list " + repoListStr,e);
+      }
+    }
+
+    return output;
   }
 
   public void setProvider(RepositoryServiceProvider provider) {
