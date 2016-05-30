@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectImageResponse;
 import com.github.dockerjava.api.command.PullImageCmd;
+import com.github.dockerjava.api.model.Image;
 import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.core.command.PullImageResultCallback;
 
@@ -116,7 +117,7 @@ public class RepositoryServiceProviderService {
       public void run() {
         try {
           pullCmd.exec(new PullImageResultCallback()).awaitSuccess();
-          InspectImageResponse img = dockerClient.inspectImageCmd(imageName).exec();
+          InspectImageResponse img = dockerClient.inspectImageCmd(imageName+":"+finalTag).exec();
           if (img != null) {
             output.write(provider.imageUpdated(imageName, finalTag, img, dockerClient));
           }
@@ -158,7 +159,7 @@ public class RepositoryServiceProviderService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   @Path("notify")
-  public void notify(@QueryParam("token") String token, ObjectNode payload) {
+  public ChunkedOutput<ImageInfoBean> notify(@QueryParam("token") String token, ObjectNode payload) {
     if (token != null && token.equals(System.getProperty(ReposyncTags.REPOSYNC_TOKEN))) {
       JsonNode pushData = payload.get("push_data");
       String tag = pushData.get("tag").asText();
@@ -166,7 +167,7 @@ public class RepositoryServiceProviderService {
       JsonNode repoInfo = payload.get("repository");
       String repoName = repoInfo.get("repo_name").asText();
 
-      ChunkedOutput<ImageInfoBean> result = pull(repoName, tag);
+      return pull(repoName, tag);
     } else {
       throw new NotAuthorizedException("Authorization token needed");
     }
@@ -198,19 +199,24 @@ public class RepositoryServiceProviderService {
                 dockerClient.pullImageCmd(finalRepo).exec(new PullImageResultCallback())
                   .awaitSuccess();
 
-                InspectImageResponse img = dockerClient.inspectImageCmd(finalRepo).exec();
-                for (String fullName : img.getRepoTags()) {
-                  String[] splitName = fullName.split(":");
-                  String finalName = splitName[0];
-                  String tag = (splitName.length > 1) ? splitName[1] : "latest";
-                  if (finalName.equals(finalRepo)) {
-                    try {
-                      output.write(provider.imageUpdated(finalName, tag, img, dockerClient));
-                    } catch (IOException e) {
-                      logger.error("Error writing response for image update of " + finalName, e);
+                List<Image> imageList = dockerClient.listImagesCmd().withImageNameFilter(finalRepo).exec();
+                for (Image currentImg : imageList) {
+
+                  InspectImageResponse img = dockerClient.inspectImageCmd(currentImg.getId()).exec();
+                  for (String fullName : img.getRepoTags()) {
+                    String[] splitName = fullName.split(":");
+                    String finalName = splitName[0];
+                    String tag = (splitName.length > 1) ? splitName[1] : "latest";
+                    if (finalName.equals(finalRepo)) {
+                      try {
+                        output.write(provider.imageUpdated(finalName, tag, img, dockerClient));
+                      } catch (IOException e) {
+                        logger.error("Error writing response for image update of " + finalName, e);
+                      }
                     }
                   }
                 }
+
               }
             }
           }.start();
