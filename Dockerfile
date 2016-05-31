@@ -12,5 +12,5 @@ RUN apt-get install -y oracle-java8-installer maven git
 # Install and run syncrepos
 RUN git clone https://github.com/indigo-dc/java-syncrepos.git
 RUN echo 'REPOSYNC_REST_ENDPOINT=http://0.0.0.0:8085\nREPOSYNC_BACKEND=OpenNebula' > .reposync.properties
-RUN cd java-syncrepos && mvn compile
+RUN cd java-syncrepos && git pull && mvn compile
 RUN cd java-syncrepos && mvn exec:java
