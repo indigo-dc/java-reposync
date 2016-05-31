@@ -65,7 +65,10 @@ public class ConfigurationManager {
     for (String prop : propList) {
       String currentValue = System.getProperty(prop);
       if (currentValue == null || currentValue.isEmpty()) {
-        System.setProperty(prop, properties.getProperty(prop));
+        currentValue = properties.getProperty(prop);
+        if (currentValue != null) {
+          System.setProperty(prop, properties.getProperty(prop));
+        }
       }
     }
   }
