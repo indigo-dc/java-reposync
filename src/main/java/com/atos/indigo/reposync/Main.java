@@ -50,8 +50,16 @@ public class Main {
     System.out.println(String.format("Jersey app started in Grizzly with WADL available at "
             + "%sapplication.wadl\nHit enter to stop it...", ConfigurationManager.getProperty(
             ReposyncTags.REPOSYNC_REST_ENDPOINT)));
-    System.in.read();
-    server.stop();
+
+    // register shutdown hook
+    Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+      @Override
+      public void run() {
+        server.shutdown();
+      }
+    }, "shutdownHook"));
+
+
   }
 
   /**
@@ -59,6 +67,8 @@ public class Main {
    */
   public static void main(String[] args) throws Exception {
     execServer();
+
+    Thread.currentThread().join();
   }
 }
 
