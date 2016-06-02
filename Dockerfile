@@ -9,9 +9,11 @@ RUN echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true 
 RUN apt-get install -y oracle-java8-installer maven git
 # Install and run syncrepos
 WORKDIR /root
+COPY .docker-java.properties .docker-java.properties
 RUN git clone https://github.com/indigo-dc/java-syncrepos.git
 RUN cd java-syncrepos && git pull && mvn compile
 WORKDIR .indigo-reposync
-COPY reposync.config reposync.config
-COPY reposync-log.config reposync-log.config
+COPY reposync.properties reposync.properties
+COPY reposync-log.properties reposync-log.properties
 RUN mkdir logs
+RUN touch repolist
