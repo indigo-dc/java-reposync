@@ -8,7 +8,7 @@ RUN add-apt-repository ppa:webupd8team/java
 RUN apt-get update
 # Install java and dev environment
 RUN echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections
-RUN apt-get install -y oracle-java8-installer maven git curl python
+RUN apt-get install -y oracle-java8-installer maven git
 # Install and run syncrepos
 RUN cd /root && git clone https://github.com/indigo-dc/java-syncrepos.git
 RUN echo 'REPOSYNC_REST_ENDPOINT=http://0.0.0.0:8085\nREPOSYNC_BACKEND=OpenNebula' > /root/.reposync.properties
