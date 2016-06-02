@@ -154,6 +154,12 @@
             <version>2.5</version>
         </dependency>
 
+        <dependency>
+            <groupId>dnl.utils</groupId>
+            <artifactId>j-text-utils</artifactId>
+            <version>0.3.3</version>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -166,21 +172,6 @@
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>1.2.1</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>java</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <mainClass>com.atos.indigo.reposync.Main</mainClass>
                 </configuration>
             </plugin>
             <plugin>
