@@ -10,7 +10,6 @@ RUN apt-get update
 RUN echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections
 RUN apt-get install -y oracle-java8-installer maven git
 # Install and run syncrepos
-RUN git clone https://github.com/indigo-dc/java-syncrepos.git
-RUN echo 'REPOSYNC_REST_ENDPOINT=http://0.0.0.0:8085\nREPOSYNC_BACKEND=OpenNebula' > .reposync.properties
-RUN cd java-syncrepos && git pull && mvn compile
-RUN cd java-syncrepos && mvn exec:java
+RUN cd /root && git clone https://github.com/indigo-dc/java-syncrepos.git
+RUN echo 'REPOSYNC_REST_ENDPOINT=http://0.0.0.0:8085\nREPOSYNC_BACKEND=OpenNebula' > /root/.reposync.properties
+RUN cd /root/java-syncrepos && git pull && mvn compile

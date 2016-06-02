@@ -48,7 +48,7 @@ public class Main {
   public static void execServer() throws IOException, ConfigurationException {
     final HttpServer server = startServer(null);
     System.out.println(String.format("Jersey app started in Grizzly with WADL available at "
-            + "%sapplication.wadl\nHit enter to stop it...", ConfigurationManager.getProperty(
+            + "%s/application.wadl\n", ConfigurationManager.getProperty(
             ReposyncTags.REPOSYNC_REST_ENDPOINT)));
 
     // register shutdown hook

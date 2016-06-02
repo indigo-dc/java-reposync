@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.ws.rs.Consumes;
@@ -187,49 +188,68 @@ public class RepositoryServiceProviderService {
   @Path("sync")
   @Produces(MediaType.APPLICATION_JSON)
   @Authorized
-  public ChunkedOutput<ImageInfoBean> sync() {
+  public ChunkedOutput<String> sync() {
 
-    final ChunkedOutput<ImageInfoBean> output = new ChunkedOutput<>(ImageInfoBean.class);
+    final ChunkedOutput<String> output = new ChunkedOutput<>(String.class);
 
     String repoListStr = ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_REPO_LIST);
     if (repoListStr != null) {
       try {
         List<String> repoList = mapper.readValue(repoListStr, new TypeReference<List<String>>(){});
+        final List<Thread> threads = new ArrayList<>();
         for (String repo : repoList) {
           final String finalRepo = repo;
-          new Thread() {
-            @Override
-            public void run() {
-              synchronized (dockerClient) {
-                dockerClient.pullImageCmd(finalRepo).exec(new PullImageResultCallback())
-                  .awaitSuccess();
+          threads.add(
+              new Thread() {
+                @Override
+                public void run() {
+                  synchronized (dockerClient) {
+                    dockerClient.pullImageCmd(finalRepo).exec(new PullImageResultCallback())
+                      .awaitSuccess();
 
-                List<Image> imageList = dockerClient.listImagesCmd()
-                    .withImageNameFilter(finalRepo).exec();
+                    List<Image> imageList = dockerClient.listImagesCmd()
+                        .withImageNameFilter(finalRepo).exec();
 
-                for (Image currentImg : imageList) {
+                    for (Image currentImg : imageList) {
 
-                  InspectImageResponse img = dockerClient.inspectImageCmd(currentImg.getId())
-                      .exec();
+                      InspectImageResponse img = dockerClient.inspectImageCmd(currentImg.getId())
+                          .exec();
 
-                  for (String fullName : img.getRepoTags()) {
-                    String[] splitName = fullName.split(":");
-                    String finalName = splitName[0];
-                    String tag = (splitName.length > 1) ? splitName[1] : "latest";
-                    if (finalName.equals(finalRepo)) {
+                      for (String fullName : img.getRepoTags()) {
+                        String[] splitName = fullName.split(":");
+                        String finalName = splitName[0];
+                        String tag = (splitName.length > 1) ? splitName[1] : "latest";
+                        if (finalName.equals(finalRepo)) {
+                          try {
+                            output.write(mapper.writeValueAsString(
+                                provider.imageUpdated(finalName, tag, img, dockerClient)) + "&&");
+                          } catch (IOException e) {
+                            logger.error("Error writing response for image update of "
+                                + finalName, e);
+                          }
+                        }
+                      }
+                    }
+
+                    threads.remove(this);
+                    if (threads.isEmpty()) {
                       try {
-                        output.write(provider.imageUpdated(finalName, tag, img, dockerClient));
+                        output.close();
                       } catch (IOException e) {
-                        logger.error("Error writing response for image update of " + finalName, e);
+                        logger.error("Error closing output",e);
                       }
                     }
                   }
                 }
-
               }
-            }
-          }.start();
+          );
+
+
+
         }
+
+        threads.forEach(thread -> thread.start());
+
       } catch (IOException e) {
         logger.error("Error deserializing respository list " + repoListStr,e);
       }
