@@ -30,7 +30,9 @@ public class ConfigurationManager {
   private static final Logger logger = LoggerFactory.getLogger(ConfigurationManager.class);
   // Base URI the Grizzly HTTP server will listen on
   private static final String HOME_PATH = System.getProperty("user.home");
-  static final String CONFIG_PATH = HOME_PATH + "/.reposync.properties";
+  private static final String CONFIG_DIR = HOME_PATH + "/.indigo-reposync";
+  private static final String CONFIG_PATH = CONFIG_DIR + "/reposync.config";
+  private static final String REPOLIST_PATH = CONFIG_DIR + "/repolist";
 
   private static ObjectMapper mapper = new ObjectMapper();
 
@@ -86,7 +88,9 @@ public class ConfigurationManager {
     } else {
       throw ConfigurationException.undefinedProperty(ReposyncTags.REPOSYNC_BACKEND);
     }
-    String repoList = getProperty(ReposyncTags.REPOSYNC_REPO_LIST_FILE);
+
+    String repoList = REPOLIST_PATH;
+    System.setProperty(ReposyncTags.REPOSYNC_REPO_LIST_FILE, repoList);
     if (repoList != null) {
       readSyncRepoList(repoList);
     }
