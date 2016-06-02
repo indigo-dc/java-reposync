@@ -31,7 +31,7 @@ public class ConfigurationManager {
   // Base URI the Grizzly HTTP server will listen on
   private static final String HOME_PATH = System.getProperty("user.home");
   private static final String CONFIG_DIR = HOME_PATH + "/.indigo-reposync";
-  private static final String CONFIG_PATH = CONFIG_DIR + "/reposync.config";
+  private static final String CONFIG_PATH = CONFIG_DIR + "/reposync.properties";
   private static final String REPOLIST_PATH = CONFIG_DIR + "/repolist";
 
   private static ObjectMapper mapper = new ObjectMapper();
