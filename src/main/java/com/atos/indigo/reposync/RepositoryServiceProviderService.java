@@ -84,6 +84,7 @@ public class RepositoryServiceProviderService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Authorized
   public List<ImageInfoBean> images(@QueryParam("filter") String filter) {
+    logger.info("Retrieving image list");
     return provider.images(filter);
   }
 
@@ -103,6 +104,7 @@ public class RepositoryServiceProviderService {
           @QueryParam("tag") final String tag) {
 
 
+
     final ChunkedOutput<ImageInfoBean> output = new ChunkedOutput<>(ImageInfoBean.class);
 
     final PullImageCmd pullCmd = dockerClient.pullImageCmd(imageName);
@@ -112,6 +114,8 @@ public class RepositoryServiceProviderService {
     }
 
     final String finalTag = (tag != null) ? tag : "latest";
+
+    logger.info("Pulling image " + imageName + "with tag " + finalTag);
 
     new Thread() {
       @Override
@@ -151,6 +155,9 @@ public class RepositoryServiceProviderService {
   @Produces(MediaType.APPLICATION_JSON)
   @Authorized
   public ActionResponseBean delete(@PathParam("imageId") String imageId) {
+
+    logger.info("Deleting image with id " + imageId);
+
     return provider.delete(imageId);
   }
 
@@ -165,6 +172,9 @@ public class RepositoryServiceProviderService {
   @Path("notify")
   public ChunkedOutput<ImageInfoBean> notify(@QueryParam("token") String token,
                                              ObjectNode payload) {
+
+    logger.info("Received webhook notification. Payload: \n" + payload.toString());
+
 
     if (token != null && token.equals(System.getProperty(ReposyncTags.REPOSYNC_TOKEN))) {
       JsonNode pushData = payload.get("push_data");
@@ -193,6 +203,9 @@ public class RepositoryServiceProviderService {
     final ChunkedOutput<String> output = new ChunkedOutput<>(String.class);
 
     String repoListStr = ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_REPO_LIST);
+
+    logger.info("Executing sync on repository list " + repoListStr);
+
     if (repoListStr != null) {
       try {
         List<String> repoList = mapper.readValue(repoListStr, new TypeReference<List<String>>(){});
