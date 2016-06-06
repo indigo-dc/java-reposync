@@ -1,5 +1,7 @@
 package com.atos.indigo.reposync;
 
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+
 import org.glassfish.grizzly.http.server.HttpServer;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
@@ -28,6 +30,7 @@ public class Main {
       ConfigurationManager.loadConfig();
       rc.packages(BASE_PKG);
       rc.register(AuthorizationRequestFilter.class);
+      rc.register(JacksonJsonProvider.class);
     } else {
       // For testing purposes
       rc.register(svc);
