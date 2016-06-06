@@ -1,13 +1,12 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 COMMAND=$1
-URL_BASE="http://localhost:8085/v1.0"
 case $COMMAND in
   start)
-    mvn exec:java -Dexec.mainClass="com.atos.indigo.reposync.Main" -Djava.util.logging.config.file="$HOME/.indigo-reposync/reposync-log.properties"&
+    java -cp /lib/reposync.jar com.atos.indigo.reposync.Main -Djava.util.logging.config.file="$HOME/.indigo-reposync/reposync-log.properties"
     ;;
 
   *)
     ARGS="$@";
-    mvn -q exec:java -Dexec.mainClass="com.atos.indigo.reposync.ReposyncClient" -Dexec.args="$ARGS"
+    java -cp /lib/reposync.jar com.atos.indigo.reposync.ReposyncClient $@
     ;;
 esac
