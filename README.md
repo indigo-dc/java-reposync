@@ -26,9 +26,12 @@ The configuration process is described in https://github.com/docker-java/docker-
 
 All the described options are accepted but it's prefereable to have a $HOME/.docker-java.properties file configured to simplify the process
 
-### Configuration file
+### Configuration 
+The configuration files should be defined in $HOME/.indigo-reposync directory and it's composed of:
 
-A configuration file should be created in $HOME/.reposync.properties of the user which starts the REST server. This file should contain the following mandatory properties:
+#### reposync.properties
+
+This file is the main configuration one and should contain the following mandatory properties:
 
 - REPOSYNC_TOKEN: The secret token used for authorization which will be used in the DockerHub webhook. It will be used in the rest of the operations as an authorization token as well.
 - REPOSYNC_REST_ENDPOINT: Endpoint for the REST server to listen for requests
@@ -40,7 +43,7 @@ and the following optional properties:
 
 Depending on the backend, further properties will have to be defined.
 
-### OpenStack configuration
+##### OpenStack configuration
 
 When using OpenStack as a target for the synchronization, the following properties should be defined in .reposync.properties file:
 
@@ -52,12 +55,20 @@ When using OpenStack as a target for the synchronization, the following properti
 - OS_AUTH_URL
 - OS_CACERT
 
-### OpenNebula configuration
+##### OpenNebula configuration
 
 When using OpenNebula as backend, the following properties should be defined in the configuration file:
 
 - ONE_XMLRPC: URL pointing to the RPC endpoint of the OpenNebula installation
 - ONE_AUTH: Path to an authorization file in the filesystem containing the OpenNebula credentials in the format <username>:<password>
+
+#### reposync-log.properties
+
+This file is a standard JRE logging configuration file that will be used to log events in the REST service.
+
+#### repolist
+
+A file containing a list of repositories to synchronize when the sync operation is executed. It must contain a repository per line.
 
 ## Development
 
@@ -75,11 +86,20 @@ It will create an image named indigo-reposync with tag v1. Please, feel free to 
 
 To run it, access to the host docker installation is needed. To do so, please run the recently created image with the command:
 
-`docker run -v /var/run/docker.sock:/var/run/docker.sock  --name reposync -i -t indigo-reposync:v1 /bin/bash`
+`docker run -v /var/run/docker.sock:/var/run/docker.sock  --name reposync -i -t indigo-reposync:v1`
 
-Once in the bash, create a valid configuration file in /root folder and enter in /root/java-reposync folder
+Some stub configuration files are included in the image and they can be filled and used to run the REST service, however, it's recommended to manage them in the host system and mount them as volumes. Also, to be able to access the service from 
+outside the host system, port redirection might be needed. A common startup configuration can be:
 
-The following commands are available in the reposync.sh shell script:
+`docker run -d -v /var/run/docker.sock:/var/run/docker.sock -v /<homedir>/.indigo-reposync:/root/.indigo-reposync -v /<homedir>/.one/one_auth:/root/one_auth -p 80:8085 --name reposyncserver -i -t indigo-reposync:v1`
+
+That way, the configuration is passed from the host system to the container and it can be shared among different instances.
+
+To execute any command, when the container is running execute:
+
+`docker exec reposyncserver reposync <command>` 
+
+The following commands are available in the reposync shell script:
 
 - start: Starts the REST server
 - list: List the images in the backend IaaS platform
