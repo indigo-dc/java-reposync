@@ -5,7 +5,6 @@ import com.atos.indigo.reposync.beans.ImageInfoBean;
 import com.atos.indigo.reposync.providers.OpenNebulaRepositoryServiceProvider;
 import com.atos.indigo.reposync.providers.OpenStackRepositoryServiceProvider;
 import com.atos.indigo.reposync.providers.RepositoryServiceProvider;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -43,6 +42,7 @@ import javax.ws.rs.core.MediaType;
 public class RepositoryServiceProviderService {
 
   private static final Logger logger = LoggerFactory.getLogger(RepositoryServiceProvider.class);
+  public static final String IMG_SEPARATOR = "&&";
 
   RepositoryServiceProvider provider = null;
 
@@ -202,71 +202,58 @@ public class RepositoryServiceProviderService {
 
     final ChunkedOutput<String> output = new ChunkedOutput<>(String.class);
 
-    String repoListStr = ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_REPO_LIST);
+    List<String> repoList = ConfigurationManager.getRepoList();
+    final List<Thread> threads = new ArrayList<>();
+    for (String repo : repoList) {
+      final String finalRepo = repo;
+      threads.add(
+          new Thread() {
+            @Override
+            public void run() {
+              synchronized (dockerClient) {
+                dockerClient.pullImageCmd(finalRepo).exec(new PullImageResultCallback())
+                  .awaitSuccess();
 
-    logger.info("Executing sync on repository list " + repoListStr);
+                List<Image> imageList = dockerClient.listImagesCmd()
+                    .withImageNameFilter(finalRepo).exec();
 
-    if (repoListStr != null) {
-      try {
-        List<String> repoList = mapper.readValue(repoListStr, new TypeReference<List<String>>(){});
-        final List<Thread> threads = new ArrayList<>();
-        for (String repo : repoList) {
-          final String finalRepo = repo;
-          threads.add(
-              new Thread() {
-                @Override
-                public void run() {
-                  synchronized (dockerClient) {
-                    dockerClient.pullImageCmd(finalRepo).exec(new PullImageResultCallback())
-                      .awaitSuccess();
+                for (Image currentImg : imageList) {
 
-                    List<Image> imageList = dockerClient.listImagesCmd()
-                        .withImageNameFilter(finalRepo).exec();
+                  InspectImageResponse img = dockerClient.inspectImageCmd(currentImg.getId())
+                      .exec();
 
-                    for (Image currentImg : imageList) {
-
-                      InspectImageResponse img = dockerClient.inspectImageCmd(currentImg.getId())
-                          .exec();
-
-                      for (String fullName : img.getRepoTags()) {
-                        String[] splitName = fullName.split(":");
-                        String finalName = splitName[0];
-                        String tag = (splitName.length > 1) ? splitName[1] : "latest";
-                        if (finalName.equals(finalRepo)) {
-                          try {
-                            output.write(mapper.writeValueAsString(
-                                provider.imageUpdated(finalName, tag, img, dockerClient)) + "&&");
-                          } catch (IOException e) {
-                            logger.error("Error writing response for image update of "
-                                + finalName, e);
-                          }
-                        }
-                      }
-                    }
-
-                    threads.remove(this);
-                    if (threads.isEmpty()) {
+                  for (String fullName : img.getRepoTags()) {
+                    String[] splitName = fullName.split(":");
+                    String finalName = splitName[0];
+                    String tag = (splitName.length > 1) ? splitName[1] : "latest";
+                    if (finalName.equals(finalRepo)) {
                       try {
-                        output.close();
+                        output.write(mapper.writeValueAsString(
+                            provider.imageUpdated(finalName, tag, img, dockerClient))
+                            + IMG_SEPARATOR);
                       } catch (IOException e) {
-                        logger.error("Error closing output",e);
+                        logger.error("Error writing response for image update of "
+                            + finalName, e);
                       }
                     }
                   }
                 }
+
+                threads.remove(this);
+                if (threads.isEmpty()) {
+                  try {
+                    output.close();
+                  } catch (IOException e) {
+                    logger.error("Error closing output",e);
+                  }
+                }
               }
-          );
-
-
-
-        }
-
-        threads.forEach(thread -> thread.start());
-
-      } catch (IOException e) {
-        logger.error("Error deserializing respository list " + repoListStr,e);
-      }
+            }
+          }
+      );
     }
+
+    threads.forEach(thread -> thread.start());
 
     return output;
   }

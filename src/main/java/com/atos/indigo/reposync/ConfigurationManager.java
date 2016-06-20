@@ -1,5 +1,6 @@
 package com.atos.indigo.reposync;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.commons.io.FileUtils;
@@ -111,6 +112,24 @@ public class ConfigurationManager {
       return prop;
     } else {
       return System.getProperty(property);
+    }
+  }
+
+  /**
+   * Get the list of repositories in repolist file.
+   * @return List of repositories.
+   */
+  public static List<String> getRepoList() {
+    String repoListStr = getProperty(ReposyncTags.REPOSYNC_REPO_LIST);
+    if (repoListStr != null) {
+      try {
+        return mapper.readValue(repoListStr, new TypeReference<List<String>>(){});
+      } catch (IOException e) {
+        logger.error("Error reading sync repolist: " + repoListStr, e);
+        return new ArrayList<>();
+      }
+    } else {
+      return new ArrayList<>();
     }
   }
 }

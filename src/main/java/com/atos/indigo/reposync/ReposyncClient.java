@@ -13,6 +13,7 @@ import org.glassfish.jersey.client.ClientConfig;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Consumer;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -40,6 +41,93 @@ public class ReposyncClient {
       .append("delete : <image_id>\n")
       .append("sync : none\n")
       .toString();
+
+  /**
+   * Returns a list of images installed in the IaaS platform.
+   * @param target REST client.
+   * @return List of images.
+   */
+  public static List<ImageInfoBean> imageList(WebTarget target) {
+    return target.path("images").request()
+      .header(ReposyncTags.TOKEN_HEADER,
+        ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_TOKEN))
+      .get(new GenericType<List<ImageInfoBean>>(){});
+  }
+
+  /**
+   * Pulls an external image into the IaaS local platform.
+   * @param target REST client.
+   * @param imageName Image to pull.
+   * @param tag Optional tag.
+   * @return Information about the new image.
+   */
+  public static ImageInfoBean pull(WebTarget target, String imageName, String tag) {
+    WebTarget pullTarget = target.path("images").path(imageName);
+    if (tag != null) {
+      pullTarget = pullTarget.queryParam("tag",tag);
+    }
+
+    Response response = pullTarget.request()
+        .header(ReposyncTags.TOKEN_HEADER,
+          ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_TOKEN))
+        .put(Entity.json("{}"));
+
+    ChunkedInput<ImageInfoBean> input = response
+        .readEntity(new GenericType<ChunkedInput<ImageInfoBean>>(){});
+
+    return input.read();
+  }
+
+  /**
+   * Deletes an image from the local IaaS platform.
+   * @param target REST client.
+   * @param imageId Image Id to delete.
+   * @return State of the operation.
+   */
+  public static ActionResponseBean delete(WebTarget target, String imageId) {
+    return target.path("images").path(imageId)
+      .request()
+      .header(ReposyncTags.TOKEN_HEADER,
+        ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_TOKEN))
+      .delete(ActionResponseBean.class);
+  }
+
+  /**
+   * Synchronize the list of repositories configured in repolist file.
+   * @param target REST client.
+   * @param func Function that will be executed every time a successful pull is done.
+   */
+  public static void sync(WebTarget target, Consumer<ImageInfoBean> func) {
+    Response response = target.path("sync").request()
+        .header(ReposyncTags.TOKEN_HEADER,
+          ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_TOKEN))
+        .accept(MediaType.APPLICATION_JSON_TYPE)
+        .put(Entity.text(""));
+
+    ChunkedInput<String> input = response
+        .readEntity(new GenericType<ChunkedInput<String>>(){});
+
+    /* Chunked input does not work for JSON object. It returns a list of objects one after
+     * another which results in just the first object being read. The only solution so far
+     * seems to be adding a custom separator between objects and then parsing the chunks
+     * separated by that. Since the } character is part of the separator (for safety reasons
+     * since a && element could be found inside a JSON object), we need to add it later
+     * when we want to parse it to a POJO.
+     */
+    input.setParser(ChunkedInput.createParser("}"
+        + RepositoryServiceProviderService.IMG_SEPARATOR));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String img = null;
+    while ((img = input.read()) != null) {
+      try {
+        ImageInfoBean imgBean = mapper.readValue(img + "}",ImageInfoBean.class);
+        func.accept(imgBean);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+  }
 
   /**
    * Main entry point for reposync client utility.
@@ -74,23 +162,17 @@ public class ReposyncClient {
           } else {
             String progressMsg = "Adding image " + args[1];
 
-            WebTarget pullTarget = target.path("images").path(args[1]);
+            String name = args[1];
+            String tag = null;
+
             if (args.length > 2) {
-              pullTarget = target.queryParam("tag",args[2]);
+              tag = args[2];
               progressMsg += " with tag " + args[2];
             }
 
             System.out.println(progressMsg);
 
-            Response response = pullTarget.request()
-                .header(ReposyncTags.TOKEN_HEADER,
-                  ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_TOKEN))
-                .put(Entity.json("{}"));
-
-            ChunkedInput<ImageInfoBean> input = response
-                .readEntity(new GenericType<ChunkedInput<ImageInfoBean>>(){});
-
-            ImageInfoBean imageInfoBean = input.read();
+            ImageInfoBean imageInfoBean = pull(target,name,tag);
 
             printImageInfo(imageInfoBean);
             printImageList();
@@ -104,11 +186,7 @@ public class ReposyncClient {
 
             System.out.println("Deleting image with id " + args[1]);
 
-            ActionResponseBean response = target.path("images").path(args[1])
-                .request()
-                .header(ReposyncTags.TOKEN_HEADER,
-                  ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_TOKEN))
-                .delete(ActionResponseBean.class);
+            ActionResponseBean response = delete(target, args[1]);
             if (response.isSuccess()) {
               System.out.println("Successfully deleted image with id " + args[1]);
               printImageList();
@@ -124,34 +202,7 @@ public class ReposyncClient {
           System.out.println("Synchronizing images in registries: "
               + ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_REPO_LIST));
 
-          Response response = target.path("sync").request()
-              .header(ReposyncTags.TOKEN_HEADER,
-                ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_TOKEN))
-              .accept(MediaType.APPLICATION_JSON_TYPE)
-              .put(Entity.text(""));
-
-          ChunkedInput<String> input = response
-              .readEntity(new GenericType<ChunkedInput<String>>(){});
-
-          /* Chunked input does not work for JSON object. It returns a list of objects one after
-           * another which results in just the first object being read. The only solution so far
-           * seems to be adding a custom separator between objects and then parsing the chunks
-           * separated by that. Since the } character is part of the separator (for safety reasons
-           * since a && element could be found inside a JSON object), we need to add it later
-           * when we want to parse it to a POJO.
-           */
-          input.setParser(ChunkedInput.createParser("}&&"));
-
-          ObjectMapper mapper = new ObjectMapper();
-          String img = null;
-          while ((img = input.read()) != null) {
-            try {
-              printImageInfo(mapper.readValue(img + "}",ImageInfoBean.class));
-            } catch (IOException e) {
-              e.printStackTrace();
-            }
-          }
-
+          sync(target, (img -> printImageInfo(img)));
           printImageList();
           break;
 
@@ -173,10 +224,7 @@ public class ReposyncClient {
   }
 
   private static void printImageList() {
-    List<ImageInfoBean> images = target.path("images").request()
-        .header(ReposyncTags.TOKEN_HEADER,
-          ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_TOKEN))
-        .get(new GenericType<List<ImageInfoBean>>(){});
+    List<ImageInfoBean> images = imageList(target);
 
     String[] columns = new String[]{"Id", "Name", "Type",
       "Docker Id", "Docker Name", "Docker Tag"};
