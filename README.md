@@ -107,5 +107,20 @@ The following commands are available in the reposync shell script:
 - delete <imageId>: Delete an image from the IaaS repository
 - sync: Execute a synchronization operation pulling all images and tags found in the repository list specified in the REPOSYNC_REPO_LIST_FILE file
 
+## DockerHub configuration
+
+In order to benefit from the automatic synchronization of DockerHub repositories, some webhooks are needed that will trigger the pulling of the updated images.
+Let's imagine that we run the docker image with the following command:
+
+`docker run -d -v /var/run/docker.sock:/var/run/docker.sock -v /home/ubuntu/.indigo-reposync:/root/.indigo-reposync -v /home/ubuntu/lipcaroot.pem:/root/lipcaroot.pem -p 80:8085 --name reposyncserver -i -t indigodatacloud/reposync:latest`
+
+This will run the server taking the configuration from the directory /home/ubuntu/.indigo-reposync in the host system and let's assume that this configuration makes it listen on port 8085 and that the host system has port 80 open to the outside world. Also, let's assume that the host machine has a DNS name 'reposync.my-idc-cloud.net' and that we've defined a secret token in the configuration file as 'mysecrettoken'.
+
+If we wanted to have the images in DockerHub repository indigodatacloud/ubuntu-sshd synchronized then we would need to create it pointing to the following URL:
+
+http://reposync.my-idc-cloud.net/v1.0/notify?token=mysecrettoken
+
+Now everytime that an image is pushed to the indigodatacloud/ubuntu-sshd repository, the reposync service will receive a notification and execute a pull operation over the image tags that have been updated, integrating and/or updating them in the local image repository (in this case, Glance from OpenStack).
+If the reposync service is down when the notification is launched or the network is not working, then a manual pull can be executed by accessing the machine in which the reposync docker container is running and executing `docker exec reposyncserver reposync pull indigodatacloud/ubuntu-sshd <updated_tag>` where \<updated_tag\> is the name of the tag that has just been pushed (and whose notification has been missed).
 
 
