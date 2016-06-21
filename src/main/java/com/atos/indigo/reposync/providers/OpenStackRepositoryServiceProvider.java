@@ -12,9 +12,10 @@ import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.api.image.ImageService;
 import org.openstack4j.core.transport.Config;
+import org.openstack4j.model.common.ActionResponse;
 import org.openstack4j.model.common.Identifier;
 import org.openstack4j.model.common.Payloads;
-import org.openstack4j.model.compute.ActionResponse;
+import org.openstack4j.model.identity.v3.Token;
 import org.openstack4j.model.image.ContainerFormat;
 import org.openstack4j.model.image.DiskFormat;
 import org.openstack4j.model.image.Image;
@@ -25,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -48,46 +50,61 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
   private static final String ADMIN_PASS_VAR = "OS_PASSWORD";
   private ObjectMapper mapper = new ObjectMapper();
 
-  private ImageService client = null;
+  private Token token;
 
   /**
    * Default constructor using the client configuration defined in the system.
    * @throws ConfigurationException If the configuration is not found or incorrect.
    */
   public OpenStackRepositoryServiceProvider() throws ConfigurationException {
-    this.client = getAdminClient();
+
   }
 
-  public OpenStackRepositoryServiceProvider(ImageService client) {
-    this.client = client;
+  public OpenStackRepositoryServiceProvider(Token token) {
+    this.token = token;
   }
 
   private OSClient getClient(String username, String password) {
 
-    OSClient client = OSFactory.builderV3()
+    OSClient.OSClientV3 client = OSFactory.builderV3()
             .endpoint(ENDPOINT)
             .credentials(username, password, Identifier.byName(DOMAIN))
             .withConfig(Config.DEFAULT.withSSLVerificationDisabled())
             .scopeToProject(Identifier.byName(PROJECT), Identifier.byName(PROJECT_DOMAIN))
             .authenticate();
+    token = client.getToken();
     return client;
   }
 
-  private ImageService getAdminClient() throws ConfigurationException {
-    String adminUser = ConfigurationManager.getProperty(ADMIN_USER_VAR);
-    String adminPass = ConfigurationManager.getProperty(ADMIN_PASS_VAR);
+  private ImageService getAdminClient() {
+    try {
+      if (token == null || hasExpired(token)) {
+        String adminUser = ConfigurationManager.getProperty(ADMIN_USER_VAR);
+        String adminPass = ConfigurationManager.getProperty(ADMIN_PASS_VAR);
 
-    if (adminUser != null && adminPass != null) {
-      return getClient(adminUser, adminPass).images();
-    } else {
-      throw new ConfigurationException("Openstack user and password are mandatory.");
+        if (adminUser != null && adminPass != null) {
+          return getClient(adminUser, adminPass).images();
+        } else {
+          throw new ConfigurationException("Openstack user and password are mandatory.");
+        }
+      } else {
+        return OSFactory.clientFromToken(token).images();
+      }
+    } catch (ConfigurationException e) {
+      logger.error("Invalid configuration found for Open Stack",e);
+      return null;
     }
+  }
+
+  private boolean hasExpired(Token token) {
+    Date now = new Date();
+    return now.after(token.getExpires());
   }
 
   @Override
   public List<ImageInfoBean> images(String filter) {
     List<ImageInfoBean> result = new ArrayList<>();
-    List<? extends Image> images = client.listAll();
+    List<? extends Image> images = getAdminClient().listAll();
     if (images != null) {
       for (Image img : images) {
         if ((filter != null && img.getName().matches(
@@ -124,7 +141,7 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
 
   @Override
   public ActionResponseBean delete(String imageId) {
-    ActionResponse opResult = client.delete(imageId);
+    ActionResponse opResult = getAdminClient().delete(imageId);
     ActionResponseBean result = new ActionResponseBean();
     result.setSuccess(opResult.isSuccess());
     result.setErrorMessage(opResult.getFault());
@@ -146,10 +163,11 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
   @Override
   public ImageInfoBean imageUpdated(String imageName, String tag, InspectImageResponse img,
                                     DockerClient restClient) {
-    ImageInfoBean foundImg = findImage(imageName, tag, client.listAll());
+    ImageService api = getAdminClient();
+    ImageInfoBean foundImg = findImage(imageName, tag, api.listAll());
     if (foundImg != null) {
       if (!img.getId().equals(foundImg.getDockerId())) {
-        ActionResponse response = client.delete(foundImg.getId());
+        ActionResponse response = getAdminClient().delete(foundImg.getId());
         if (!response.isSuccess()) {
           logger.error("Error deleting updated image: " + response.getFault());
           return null;
@@ -160,15 +178,15 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
     }
 
     try {
-      return getImageInfo(addImage(imageName, tag, img.getId(), client, restClient));
+      return getImageInfo(addImage(img, imageName, tag, img.getId(), api, restClient));
     } catch (IOException e) {
       e.printStackTrace();
     }
     return null;
   }
 
-  private Image addImage(String name, String tag, String id, ImageService api,
-                         DockerClient restClient) throws IOException {
+  private Image addImage(InspectImageResponse img, String name, String tag, String id,
+                         ImageService api, DockerClient restClient) throws IOException {
 
     InputStream responseStream = restClient.saveImageCmd(id).exec();
     if (responseStream != null) {
@@ -179,6 +197,9 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
               .property(DOCKER_ID, id)
               .property(DOCKER_IMAGE_NAME, name)
               .property(DOCKER_IMAGE_TAG, tag)
+              .property("hw_architecture", img.getArch())
+              .property("img_hv_type","docker")
+              .property("hw_vm_mode","exe")
               .property("hypervisor_type", "docker").build(), payload);
       return result;
     } else {
