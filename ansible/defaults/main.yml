@@ -1,0 +1,16 @@
+---
+
+reposync_host: 0.0.0.0
+reposync_port: 8085
+reposync_endpoint: http://{{ reposync_host }}:{{ reposync_port }}
+reposync_backend: OpenStack
+reposync_os_project_domain_name: default
+reposync_os_user_domain_name: default
+reposync_os_project_name: indigo
+reposync_os_certpath: /root/lipcaroot.pem
+reposync_one_auth_file_path: /root/.one_auth
+
+reposync_docker_image_tag: latest
+reposync_host_port: 80
+
+reposync_repolist_items: []

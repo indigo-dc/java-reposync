@@ -1,0 +1,25 @@
+# REST server config
+REPOSYNC_TOKEN={{ reposync_token }}
+REPOSYNC_REST_ENDPOINT={{ reposync_endpoint }}
+REPOSYNC_BACKEND={{ reposync_backend }}
+
+{% if reposync_backend == "OpenStack" %}
+
+# Openstack config
+OS_PROJECT_DOMAIN_NAME={{ reposync_os_project_domain_name }}
+OS_USER_DOMAIN_NAME={{ reposync_os_user_domain_name }}
+OS_PROJECT_NAME={{ reposync_os_project_name }}
+OS_USERNAME={{ reposync_os_username }}
+OS_PASSWORD={{ reposync_os_password }}
+OS_AUTH_URL={{ reposync_os_url}}
+OS_IDENTITY_API_VERSION=3
+OS_IMAGE_API_VERSION=2
+OS_CACERT={{ reposync_os_certpath }}
+
+{% else %}
+
+#OpenNebula config
+ONE_XMLRPC={{ reposync_one_xmlrpc_path }}
+ONE_AUTH={{ reposync_one_auth_file_path }}
+
+{% endif %}

@@ -10,8 +10,8 @@ COPY docker/.docker-java.properties .docker-java.properties
 
 # Prepare default configuration
 WORKDIR /root/.indigo-reposync
-COPY docker/reposync.properties reposync.properties
-COPY docker/reposync-log.properties reposync-log.properties
+COPY ansible/templates/reposync.properties.j2 reposync.properties
+COPY ansible/files/reposync-log.properties reposync-log.properties
 RUN mkdir logs
 RUN touch repolist
 
