@@ -1,0 +1,58 @@
+---
+
+- include_vars: defaults/main.yml
+
+- name: Creates configuration directory
+  file: path="/home/{{ reposync_user }}/.indigo-reposync" state=directory
+
+- name: Creates log directory
+  file: path="/home/{{ reposync_user }}/.indigo-reposync/logs" state=directory
+
+- name: Creates repolist file
+  file: path="/home/{{ reposync_user }}/.indigo-reposync/repolist" state=touch
+
+- name: Log configuration creation
+  copy: src=reposync-log.properties dest="/home/{{ reposync_user }}/.indigo-reposync/reposync-log.properties"
+
+- name: Configuration creation
+  template: src=reposync.properties.j2 dest="/home/{{ reposync_user }}/.indigo-reposync/reposync.properties"
+
+- name: Create repolist file
+  blockinfile:
+    dest: /home/{{ reposync_user }}/.indigo-reposync/repolist
+    create: yes
+    block: |
+      {{ item }}
+  with_items: "{{ reposync_repolist_items }}"
+
+- name: OpenNebula credentials creation
+  template: src=one_auth.j2 dest=/home/{{ reposync_user }}/.one/one_auth
+  when: (reposync_backend == "OpenNebula")
+
+- name: Set OpenNebula volumes
+  set_fact:
+    volumes: ["/home/{{ reposync_user }}/.indigo-reposync:/root/.indigo-reposync","/home/{{ reposync_user }}/.one/one_auth:{{ reposync_one_auth_file_path }}"]
+  when: (reposync_backend == "OpenNebula")
+
+- name: Set OpenStack volumes
+  set_fact:
+    volumes: ["/home/{{ reposync_user }}/.indigo-reposync:/root/.indigo-reposync","{{ reposync_os_host_certpath }}:{{ reposync_os_certpath }}"]
+  when: (reposync_backend != "OpenNebula")
+
+- name: Install python dependencies
+  apt: name=python-pip state=present update_cache=yes
+  become: true
+
+- name: Install docker dependencies
+  pip: name=docker-py
+  become: true
+
+- name: Start reposync docker container
+  docker_container:
+    name: reposync
+    image: indigodatacloud/reposync:{{ reposync_docker_image_tag }}
+    state: started
+    restart: yes
+    volumes: "{{ volumes }}"
+    ports:
+     - "{{ reposync_host_port }}:{{ reposync_port }}"
