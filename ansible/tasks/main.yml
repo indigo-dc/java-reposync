@@ -14,10 +14,12 @@
 - name: Log configuration creation
   copy: src=reposync-log.properties dest="/home/{{ reposync_user }}/.indigo-reposync/reposync-log.properties"
 
+- debug: var=reposync_backend
+
 - name: Configuration creation
   template: src=reposync.properties.j2 dest="/home/{{ reposync_user }}/.indigo-reposync/reposync.properties"
 
-- name: Create repolist file
+- name: Update repolist file
   blockinfile:
     dest: /home/{{ reposync_user }}/.indigo-reposync/repolist
     create: yes
@@ -39,9 +41,15 @@
     volumes: ["/home/{{ reposync_user }}/.indigo-reposync:/root/.indigo-reposync","{{ reposync_os_host_certpath }}:{{ reposync_os_certpath }}"]
   when: (reposync_backend != "OpenNebula")
 
-- name: Install python dependencies
+- name: Install python dependencies (Ubuntu)
   apt: name=python-pip state=present update_cache=yes
   become: true
+  when: ansible_distribution == 'Ubuntu'
+
+- name: Install python dependencies (CentOS)
+  yum: name=python-pip state=present update_cache=yes
+  become: true
+  when: ansible_distribution == 'CentOS'
 
 - name: Install docker dependencies
   pip: name=docker-py
