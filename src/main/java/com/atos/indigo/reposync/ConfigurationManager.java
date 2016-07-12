@@ -9,11 +9,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.logging.LogManager;
 
 /**
  * Created by jose on 23/05/16.
@@ -22,7 +24,8 @@ public class ConfigurationManager {
 
   public static final String[] BASE_PROPERTIES = new String[]{
     ReposyncTags.REPOSYNC_TOKEN, ReposyncTags.REPOSYNC_REST_ENDPOINT,
-    ReposyncTags.REPOSYNC_BACKEND, ReposyncTags.REPOSYNC_REPO_LIST_FILE};
+    ReposyncTags.REPOSYNC_BACKEND, ReposyncTags.REPOSYNC_REPO_LIST_FILE,
+    ReposyncTags.REPOSYNC_DEBUG_MODE};
   public static final String[] OPENSTACK_PROPERTIES = new String[]{
     "OS_PROJECT_DOMAIN_NAME", "OS_USER_DOMAIN_NAME", "OS_PROJECT_NAME",
     "OS_USERNAME", "OS_PASSWORD", "OS_AUTH_URL",
@@ -34,6 +37,7 @@ public class ConfigurationManager {
   private static final String CONFIG_DIR = HOME_PATH + "/.indigo-reposync";
   private static final String CONFIG_PATH = CONFIG_DIR + "/reposync.properties";
   private static final String REPOLIST_PATH = CONFIG_DIR + "/repolist";
+  private static final String LOG_CONFIG_PATH = CONFIG_DIR + "/reposync-log.properties";
 
   private static ObjectMapper mapper = new ObjectMapper();
 
@@ -77,6 +81,17 @@ public class ConfigurationManager {
     }
   }
 
+  private static void loadLoggingConfig() {
+    File logFile = new File(LOG_CONFIG_PATH);
+    if (logFile.exists()) {
+      try {
+        LogManager.getLogManager().readConfiguration(new FileInputStream(logFile));
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
   private static void loadConfig(Properties properties) throws ConfigurationException {
     loadConfigList(properties, BASE_PROPERTIES);
     String backend = System.getProperty(ReposyncTags.REPOSYNC_BACKEND);
@@ -98,6 +113,7 @@ public class ConfigurationManager {
   }
 
   public static void loadConfig() throws ConfigurationException {
+    loadLoggingConfig();
     loadConfig(readConfig());
   }
 
@@ -131,5 +147,17 @@ public class ConfigurationManager {
     } else {
       return new ArrayList<>();
     }
+  }
+
+  /**
+   * Check if debug mode is enabled in the configuration.
+   * @return True if debug mode is enabled.
+   */
+  public static boolean isDebugMode() {
+    String debug = getProperty(ReposyncTags.REPOSYNC_DEBUG_MODE);
+    if (debug != null) {
+      return new Boolean(debug);
+    }
+    return false;
   }
 }
