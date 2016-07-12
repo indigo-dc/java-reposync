@@ -10,6 +10,7 @@ import com.github.dockerjava.api.command.InspectImageResponse;
 
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
+import org.openstack4j.api.client.IOSClientBuilder;
 import org.openstack4j.api.image.ImageService;
 import org.openstack4j.core.transport.Config;
 import org.openstack4j.model.common.ActionResponse;
@@ -65,24 +66,41 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
   }
 
   private OSClient getClient(String username, String password) {
-
-    OSClient.OSClientV3 client = OSFactory.builderV3()
-            .endpoint(ENDPOINT)
+    logger.debug("Getting client from OpenStack4j");
+    logger.debug("Creating V3 builder");
+    OSFactory.enableHttpLoggingFilter(ConfigurationManager.isDebugMode());
+    IOSClientBuilder.V3 builder = OSFactory.builderV3();
+    logger.debug("Configuring builder: ");
+    if (ConfigurationManager.isDebugMode()) {
+      logger.debug("Endpoint: " + ENDPOINT);
+      logger.debug("Username: " + username);
+      logger.debug("Password: " + password);
+      logger.debug("Domain: " + DOMAIN);
+      logger.debug("Project: " + PROJECT);
+      logger.debug("Project domain: " + PROJECT_DOMAIN);
+    }
+    builder = builder.endpoint(ENDPOINT)
             .credentials(username, password, Identifier.byName(DOMAIN))
             .withConfig(Config.DEFAULT.withSSLVerificationDisabled())
-            .scopeToProject(Identifier.byName(PROJECT), Identifier.byName(PROJECT_DOMAIN))
-            .authenticate();
+            .scopeToProject(Identifier.byName(PROJECT), Identifier.byName(PROJECT_DOMAIN));
+    logger.debug("Authenticating");
+    OSClient.OSClientV3 client = builder.authenticate();
+    logger.debug("Getting new client's token");
     token = client.getToken();
+    logger.debug("Got client's token");
     return client;
   }
 
   private ImageService getAdminClient() {
+    logger.debug("Getting OpenStack client");
     try {
       if (token == null || hasExpired(token)) {
+        logger.debug("No existing token found, creating new session");
         String adminUser = ConfigurationManager.getProperty(ADMIN_USER_VAR);
         String adminPass = ConfigurationManager.getProperty(ADMIN_PASS_VAR);
 
         if (adminUser != null && adminPass != null) {
+          logger.debug("Got usename and password from configuration, getting client");
           return getClient(adminUser, adminPass).images();
         } else {
           throw new ConfigurationException("Openstack user and password are mandatory.");
@@ -104,6 +122,7 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
   @Override
   public List<ImageInfoBean> images(String filter) {
     List<ImageInfoBean> result = new ArrayList<>();
+    logger.debug("Listing OpenStack images");
     List<? extends Image> images = getAdminClient().listAll();
     if (images != null) {
       for (Image img : images) {
