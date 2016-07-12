@@ -81,6 +81,17 @@ public class ConfigurationManager {
     }
   }
 
+  private static void loadLoggingConfig() {
+    File logFile = new File(LOG_CONFIG_PATH);
+    if (logFile.exists()) {
+      try {
+        LogManager.getLogManager().readConfiguration(new FileInputStream(logFile));
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
   private static void loadConfig(Properties properties) throws ConfigurationException {
     loadConfigList(properties, BASE_PROPERTIES);
     String backend = System.getProperty(ReposyncTags.REPOSYNC_BACKEND);
@@ -98,17 +109,6 @@ public class ConfigurationManager {
     System.setProperty(ReposyncTags.REPOSYNC_REPO_LIST_FILE, repoList);
     if (repoList != null) {
       readSyncRepoList(repoList);
-    }
-  }
-
-  private static void loadLoggingConfig() {
-    File logFile = new File(LOG_CONFIG_PATH);
-    if (logFile.exists()) {
-      try {
-        LogManager.getLogManager().readConfiguration(new FileInputStream(logFile));
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
     }
   }
 
@@ -149,6 +149,10 @@ public class ConfigurationManager {
     }
   }
 
+  /**
+   * Check if debug mode is enabled in the configuration.
+   * @return True if debug mode is enabled.
+   */
   public static boolean isDebugMode() {
     String debug = getProperty(ReposyncTags.REPOSYNC_DEBUG_MODE);
     if (debug != null) {
