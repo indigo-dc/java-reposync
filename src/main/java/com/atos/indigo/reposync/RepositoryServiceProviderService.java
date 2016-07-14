@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectImageResponse;
 import com.github.dockerjava.api.command.PullImageCmd;
-import com.github.dockerjava.api.model.Image;
 import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.core.command.PullImageResultCallback;
 
@@ -205,38 +204,29 @@ public class RepositoryServiceProviderService {
     List<String> repoList = ConfigurationManager.getRepoList();
     final List<Thread> threads = new ArrayList<>();
     for (String repo : repoList) {
-      final String finalRepo = repo;
+      String[] repoInfo = repo.split(":");
+      final String finalRepo = repoInfo[0];
+      final String finalTag = (repoInfo.length > 1) ? repoInfo[1] : "latest";
       threads.add(
           new Thread() {
             @Override
             public void run() {
               synchronized (dockerClient) {
-                dockerClient.pullImageCmd(finalRepo).exec(new PullImageResultCallback())
-                  .awaitSuccess();
 
-                List<Image> imageList = dockerClient.listImagesCmd()
-                    .withImageNameFilter(finalRepo).exec();
+                String fullImgName = finalRepo + ":" + finalTag;
 
-                for (Image currentImg : imageList) {
+                dockerClient.pullImageCmd(fullImgName).exec(new PullImageResultCallback())
+                    .awaitSuccess();
 
-                  InspectImageResponse img = dockerClient.inspectImageCmd(currentImg.getId())
-                      .exec();
+                InspectImageResponse img = dockerClient.inspectImageCmd(fullImgName)
+                    .exec();
 
-                  for (String fullName : img.getRepoTags()) {
-                    String[] splitName = fullName.split(":");
-                    String finalName = splitName[0];
-                    String tag = (splitName.length > 1) ? splitName[1] : "latest";
-                    if (finalName.equals(finalRepo)) {
-                      try {
-                        output.write(mapper.writeValueAsString(
-                            provider.imageUpdated(finalName, tag, img, dockerClient))
-                            + IMG_SEPARATOR);
-                      } catch (IOException e) {
-                        logger.error("Error writing response for image update of "
-                            + finalName, e);
-                      }
-                    }
-                  }
+                try {
+                  output.write(mapper.writeValueAsString(
+                              provider.imageUpdated(finalRepo, finalTag, img, dockerClient))
+                              + IMG_SEPARATOR);
+                } catch (IOException e) {
+                  logger.error("Error updating image " + fullImgName + " during synchronization",e);
                 }
 
                 threads.remove(this);

@@ -11,6 +11,43 @@ public class ImageInfoBean {
   private String dockerId;
   private String dockerName;
   private String dockerTag;
+  private String os;
+  private String architecture;
+  private String distribution;
+  private String version;
+
+  public String getOs() {
+    return os;
+  }
+
+  public void setOs(String os) {
+    this.os = os;
+  }
+
+  public String getArchitecture() {
+    return architecture;
+  }
+
+  public void setArchitecture(String architecture) {
+    this.architecture = architecture;
+  }
+
+  public String getDistribution() {
+    return distribution;
+  }
+
+  public void setDistribution(String distribution) {
+    this.distribution = distribution;
+  }
+
+  public String getVersion() {
+    return version;
+  }
+
+  public void setVersion(String version) {
+    this.version = version;
+  }
+
   private String comment;
 
   public String getId() {

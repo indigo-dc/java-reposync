@@ -32,7 +32,8 @@ import java.util.Map;
  */
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(OSFactory.class)
-public class OpenStackProviderTest extends RepositoryServiceProviderTest<OpenStackProviderTest.TestImage> {
+public class OpenStackProviderTest extends
+  RepositoryServiceProviderTest<OpenStackProviderTest.TestImage> {
 
   protected interface TestImage extends Image {
 
@@ -41,7 +42,10 @@ public class OpenStackProviderTest extends RepositoryServiceProviderTest<OpenSta
   private int idCounter = 6;
 
   protected TestImage mockImage(final String id, String name, String dockerId,
-                                                      String dockerName, String dockerTag) {
+                                String dockerName, String dockerTag,
+                                String os, String architecture,
+                                String distribution, String version) {
+
     TestImage img = Mockito.mock(TestImage.class);
 
     Mockito.when(img.getId()).thenReturn(id);
@@ -51,6 +55,10 @@ public class OpenStackProviderTest extends RepositoryServiceProviderTest<OpenSta
     properties.put(OpenStackRepositoryServiceProvider.DOCKER_ID,dockerId);
     properties.put(OpenStackRepositoryServiceProvider.DOCKER_IMAGE_NAME,dockerName);
     properties.put(OpenStackRepositoryServiceProvider.DOCKER_IMAGE_TAG,dockerTag);
+    properties.put(OpenStackRepositoryServiceProvider.OS,os);
+    properties.put(OpenStackRepositoryServiceProvider.ARCHITECTURE,architecture);
+    properties.put(OpenStackRepositoryServiceProvider.DISTRIBUTION,distribution);
+    properties.put(OpenStackRepositoryServiceProvider.VERSION,version);
 
     Mockito.when(img.getProperties()).thenReturn(properties);
 
@@ -109,7 +117,11 @@ public class OpenStackProviderTest extends RepositoryServiceProviderTest<OpenSta
           TestImage newImg = mockImage(Integer.toString(idCounter),img.getName(),
             properties.get(OpenStackRepositoryServiceProvider.DOCKER_ID),
             properties.get(OpenStackRepositoryServiceProvider.DOCKER_IMAGE_NAME),
-            properties.get(OpenStackRepositoryServiceProvider.DOCKER_IMAGE_TAG));
+            properties.get(OpenStackRepositoryServiceProvider.DOCKER_IMAGE_TAG),
+            properties.get(OpenStackRepositoryServiceProvider.OS),
+            properties.get(OpenStackRepositoryServiceProvider.ARCHITECTURE),
+            properties.get(OpenStackRepositoryServiceProvider.DISTRIBUTION),
+            properties.get(OpenStackRepositoryServiceProvider.VERSION));
 
           imageList.add(newImg);
           idCounter++;

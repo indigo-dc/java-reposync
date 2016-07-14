@@ -2,10 +2,12 @@ package com.atos.indigo.reposync.providers;
 
 import com.atos.indigo.reposync.ConfigurationException;
 import com.atos.indigo.reposync.ConfigurationManager;
+import com.atos.indigo.reposync.ReposyncTags;
 import com.atos.indigo.reposync.beans.ActionResponseBean;
 import com.atos.indigo.reposync.beans.ImageInfoBean;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectImageResponse;
+import com.github.dockerjava.api.model.ContainerConfig;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
@@ -23,6 +25,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import javax.ws.rs.PathParam;
 
@@ -36,6 +39,12 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
   public static final String DOCKER_ID = "DOCKER_ID";
   public static final String DOCKER_NAME = "DOCKER_NAME";
   public static final String DOCKER_TAG = "DOCKER_TAG";
+
+  public static final String OS = "OS";
+  public static final String DISTRIBUTION = "DISTRIBUTION";
+  public static final String VERSION = "DIST_VERSION";
+  public static final String ARCHITECTURE = "ARCHITECTURE";
+
   private static final Logger logger = LoggerFactory.getLogger(
           OpenNebulaRepositoryServiceProvider.class);
   private static final String ONE_XMLRPC = ConfigurationManager.getProperty("ONE_XMLRPC");
@@ -110,6 +119,10 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
             imgInfo.setDockerId(dockerId);
             imgInfo.setDockerName(img.xpath(TEMPLATE_BASE + DOCKER_NAME));
             imgInfo.setDockerTag(img.xpath(TEMPLATE_BASE + DOCKER_TAG));
+            imgInfo.setArchitecture(img.xpath(TEMPLATE_BASE + ARCHITECTURE));
+            imgInfo.setOs(img.xpath(TEMPLATE_BASE + OS));
+            imgInfo.setDistribution(img.xpath(TEMPLATE_BASE + DISTRIBUTION));
+            imgInfo.setVersion(img.xpath(TEMPLATE_BASE + VERSION));
           } else {
             imgInfo.setType(ImageInfoBean.ImageType.VM);
           }
@@ -206,15 +219,33 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
     Integer dockerStoreId = getDockerDatastoreId();
 
     if (dockerStoreId != null) {
+
+      ContainerConfig config = img.getConfig();
+      Map<String, String> labels = config.getLabels();
+
       String name = imageName.replace("/", "_");
-      String template = new TemplateGenerator()
-              .addProperty("NAME", "\"" + name + "\"")
-              .addProperty("PATH", DOCKER_PREFIX + imageName + ":" + tag)
-              .addProperty("TYPE", "OS")
-              .addProperty("DESCRIPTION", "\"Docker image\"")
-              .addProperty(DOCKER_ID, img.getId())
-              .addProperty(DOCKER_NAME, imageName)
-              .addProperty(DOCKER_TAG, tag)
+      TemplateGenerator templateGenerator = new TemplateGenerator()
+          .addProperty("NAME", "\"" + name + "\"")
+          .addProperty("PATH", DOCKER_PREFIX + imageName + ":" + tag)
+          .addProperty("TYPE", "OS")
+          .addProperty("DESCRIPTION", "\"Docker image\"")
+          .addProperty(DOCKER_ID, img.getId())
+          .addProperty(DOCKER_NAME, imageName)
+          .addProperty(DOCKER_TAG, tag)
+          .addProperty(OS, img.getOs())
+          .addProperty(ARCHITECTURE, img.getArch());
+
+      String dist = labels.get(ReposyncTags.DISTRIBUTION_TAG);
+      if (dist != null) {
+        templateGenerator.addProperty(DISTRIBUTION,dist);
+      }
+
+      String version = labels.get(ReposyncTags.DIST_VERSION_TAG);
+      if (version != null) {
+        templateGenerator.addProperty(VERSION, version);
+      }
+
+      String template = templateGenerator
               .generate();
 
       OneResponse result = org.opennebula.client.image.Image.allocate(
@@ -231,6 +262,10 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
         newImg.setDockerId(img.getId());
         newImg.setDockerName(imageName);
         newImg.setDockerTag(tag);
+        newImg.setArchitecture(img.getArch());
+        newImg.setOs(img.getOs());
+        newImg.setDistribution(dist);
+        newImg.setVersion(version);
         return newImg;
       }
     } else {

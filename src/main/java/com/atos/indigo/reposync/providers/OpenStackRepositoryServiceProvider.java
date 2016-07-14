@@ -2,11 +2,13 @@ package com.atos.indigo.reposync.providers;
 
 import com.atos.indigo.reposync.ConfigurationException;
 import com.atos.indigo.reposync.ConfigurationManager;
+import com.atos.indigo.reposync.ReposyncTags;
 import com.atos.indigo.reposync.beans.ActionResponseBean;
 import com.atos.indigo.reposync.beans.ImageInfoBean;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectImageResponse;
+import com.github.dockerjava.api.model.ContainerConfig;
 
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
@@ -20,6 +22,7 @@ import org.openstack4j.model.identity.v3.Token;
 import org.openstack4j.model.image.ContainerFormat;
 import org.openstack4j.model.image.DiskFormat;
 import org.openstack4j.model.image.Image;
+import org.openstack4j.model.image.builder.ImageBuilder;
 import org.openstack4j.openstack.OSFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +52,10 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
   private static final String DOMAIN = ConfigurationManager.getProperty("OS_USER_DOMAIN_NAME");
   private static final String ADMIN_USER_VAR = "OS_USERNAME";
   private static final String ADMIN_PASS_VAR = "OS_PASSWORD";
+  public static final String OS = "os";
+  public static final String DISTRIBUTION = "distribution";
+  public static final String VERSION = "version";
+  public static final String ARCHITECTURE = "hw_architecture";
   private ObjectMapper mapper = new ObjectMapper();
 
   private Token token;
@@ -58,7 +65,7 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
    * @throws ConfigurationException If the configuration is not found or incorrect.
    */
   public OpenStackRepositoryServiceProvider() throws ConfigurationException {
-
+    OSFactory.enableHttpLoggingFilter(ConfigurationManager.isDebugMode());
   }
 
   public OpenStackRepositoryServiceProvider(Token token) {
@@ -68,7 +75,7 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
   private OSClient getClient(String username, String password) {
     logger.debug("Getting client from OpenStack4j");
     logger.debug("Creating V3 builder");
-    OSFactory.enableHttpLoggingFilter(ConfigurationManager.isDebugMode());
+
     IOSClientBuilder.V3 builder = OSFactory.builderV3();
     logger.debug("Configuring builder: ");
     if (ConfigurationManager.isDebugMode()) {
@@ -148,6 +155,10 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
         result.setDockerId(imgProps.get(DOCKER_ID));
         result.setDockerName(imgProps.get(DOCKER_IMAGE_NAME));
         result.setDockerTag(imgProps.get(DOCKER_IMAGE_TAG));
+        result.setArchitecture(imgProps.get(ARCHITECTURE));
+        result.setOs(imgProps.get(OS));
+        result.setDistribution(imgProps.get(DISTRIBUTION));
+        result.setVersion(imgProps.get(VERSION));
       } else {
         result.setType(ImageInfoBean.ImageType.VM);
       }
@@ -209,17 +220,34 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
 
     InputStream responseStream = restClient.saveImageCmd(id).exec();
     if (responseStream != null) {
+
+      ContainerConfig config = img.getConfig();
+      Map<String, String> labels = config.getLabels();
+
       org.openstack4j.model.common.Payload payload = Payloads.create(responseStream);
-      Image result = api.create(Builders.image().name(name)
-              .containerFormat(ContainerFormat.DOCKER)
-              .diskFormat(DiskFormat.RAW)
-              .property(DOCKER_ID, id)
-              .property(DOCKER_IMAGE_NAME, name)
-              .property(DOCKER_IMAGE_TAG, tag)
-              .property("hw_architecture", img.getArch())
-              .property("img_hv_type","docker")
-              .property("hw_vm_mode","exe")
-              .property("hypervisor_type", "docker").build(), payload);
+      ImageBuilder imageBuilder = Builders.image().name(name)
+          .containerFormat(ContainerFormat.DOCKER)
+          .diskFormat(DiskFormat.RAW)
+          .property(DOCKER_ID, id)
+          .property(DOCKER_IMAGE_NAME, name)
+          .property(DOCKER_IMAGE_TAG, tag)
+          .property(OS, img.getOs())
+          .property(ARCHITECTURE, img.getArch())
+          .property("img_hv_type", "docker")
+          .property("hw_vm_mode", "exe")
+          .property("hypervisor_type", "docker");
+
+      String dist = labels.get(ReposyncTags.DISTRIBUTION_TAG);
+      if (dist != null) {
+        imageBuilder.property(DISTRIBUTION,dist);
+      }
+
+      String version = labels.get(ReposyncTags.DIST_VERSION_TAG);
+      if (version != null) {
+        imageBuilder.property(VERSION, version);
+      }
+
+      Image result = api.create(imageBuilder.build(), payload);
       return result;
     } else {
       return null;
