@@ -12,4 +12,7 @@ public interface ReposyncTags {
   String REPOSYNC_REPO_LIST_FILE = "REPOSYNC_REPO_LIST_FILE";
   String REPOSYNC_REPO_LIST = "REPOSYNC_REPO_LIST";
   String REPOSYNC_DEBUG_MODE = "REPOSYNC_DEBUG_MODE";
+
+  String DISTRIBUTION_TAG = "eu.indigo-datacloud.distribution";
+  String DIST_VERSION_TAG = "eu.indigo-datacloud.version";
 }

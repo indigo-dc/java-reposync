@@ -34,7 +34,8 @@ public class OpenNebulaProviderTest extends RepositoryServiceProviderTest<Image>
   private int idCounter = 6;
 
   protected Image mockImage(final String id, String name, String dockerId,
-                          String dockerName, String dockerTag) {
+                            String dockerName, String dockerTag,
+                            String os, String architecture, String distribution, String version) {
 
     final Image result = Mockito.mock(Image.class);
     Mockito.when(result.getId()).thenReturn(id);
@@ -48,6 +49,19 @@ public class OpenNebulaProviderTest extends RepositoryServiceProviderTest<Image>
     Mockito.when(result.xpath(
       OpenNebulaRepositoryServiceProvider.TEMPLATE_BASE+
         OpenNebulaRepositoryServiceProvider.DOCKER_TAG)).thenReturn(dockerTag);
+
+    Mockito.when(result.xpath(
+      OpenNebulaRepositoryServiceProvider.TEMPLATE_BASE+
+        OpenNebulaRepositoryServiceProvider.OS)).thenReturn(os);
+    Mockito.when(result.xpath(
+      OpenNebulaRepositoryServiceProvider.TEMPLATE_BASE+
+        OpenNebulaRepositoryServiceProvider.ARCHITECTURE)).thenReturn(architecture);
+    Mockito.when(result.xpath(
+      OpenNebulaRepositoryServiceProvider.TEMPLATE_BASE+
+        OpenNebulaRepositoryServiceProvider.DISTRIBUTION)).thenReturn(distribution);
+    Mockito.when(result.xpath(
+      OpenNebulaRepositoryServiceProvider.TEMPLATE_BASE+
+        OpenNebulaRepositoryServiceProvider.VERSION)).thenReturn(version);
 
     Mockito.when(result.delete()).thenAnswer(new Answer<OneResponse>() {
       @Override
@@ -100,7 +114,11 @@ public class OpenNebulaProviderTest extends RepositoryServiceProviderTest<Image>
             props.getProperty("NAME"),
             props.getProperty(OpenNebulaRepositoryServiceProvider.DOCKER_ID),
             props.getProperty(OpenNebulaRepositoryServiceProvider.DOCKER_NAME),
-            props.getProperty(OpenNebulaRepositoryServiceProvider.DOCKER_TAG));
+            props.getProperty(OpenNebulaRepositoryServiceProvider.DOCKER_TAG),
+            props.getProperty(OpenNebulaRepositoryServiceProvider.OS),
+            props.getProperty(OpenNebulaRepositoryServiceProvider.ARCHITECTURE),
+            props.getProperty(OpenNebulaRepositoryServiceProvider.DISTRIBUTION),
+            props.getProperty(OpenNebulaRepositoryServiceProvider.VERSION));
 
           imageList.add(newImage);
 
