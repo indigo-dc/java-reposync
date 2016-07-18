@@ -95,11 +95,11 @@ public class RepositoryServiceProviderService {
    * @return Return asynchronously the information of the new image.
    */
   @PUT
-  @Path("images/{imageName}")
+  @Path("images")
   @Produces(MediaType.APPLICATION_JSON)
   @Authorized
   public ChunkedOutput<ImageInfoBean> pull(
-          @PathParam("imageName") final String imageName,
+          @QueryParam("imageName") final String imageName,
           @QueryParam("tag") final String tag) {
 
 
