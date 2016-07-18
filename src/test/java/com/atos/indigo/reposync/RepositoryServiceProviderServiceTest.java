@@ -213,7 +213,8 @@ public class RepositoryServiceProviderServiceTest {
   @Test
   public void testPull() {
 
-    target.path("images").path("android").queryParam("tag","marshmallow").request().async()
+    target.path("images").queryParam("imageName","android").queryParam("tag","marshmallow")
+      .request().async()
       .put(Entity.text(""), new InvocationCallback<ImageInfoBean>(){
 
         @Override
