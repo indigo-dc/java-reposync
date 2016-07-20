@@ -265,7 +265,7 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
         newImg.setArchitecture(img.getArch());
         newImg.setOs(img.getOs());
         newImg.setDistribution(dist);
-        newImg.setVersion(version);
+        newImg.setVersion(version );
         return newImg;
       }
     } else {

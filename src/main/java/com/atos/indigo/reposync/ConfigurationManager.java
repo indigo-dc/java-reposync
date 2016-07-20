@@ -41,7 +41,7 @@ public class ConfigurationManager {
 
   private static ObjectMapper mapper = new ObjectMapper();
 
-  private static Properties readConfig() {
+  private static Properties readConfig() throws ConfigurationException {
     Properties result = new Properties();
     File configFile = new File(ConfigurationManager.CONFIG_PATH);
     logger.info("Reading property configuration file from " + CONFIG_PATH);
@@ -50,7 +50,10 @@ public class ConfigurationManager {
         result.load(new FileReader(configFile));
       } catch (IOException e) {
         logger.error("Error trying to load config file", e);
+        throw new ConfigurationException("Error reading configuration file",e);
       }
+    } else {
+      throw new ConfigurationException("Can't read configuration file " + CONFIG_PATH);
     }
     return result;
   }
