@@ -44,7 +44,7 @@ public class ConfigurationManager {
   private static Properties readConfig() throws ConfigurationException {
     Properties result = new Properties();
     File configFile = new File(ConfigurationManager.CONFIG_PATH);
-    logger.info("Reading property configuration file from " + CONFIG_PATH);
+    logger.debug("Reading property configuration file from " + CONFIG_PATH);
     if (configFile.exists()) {
       try {
         result.load(new FileReader(configFile));

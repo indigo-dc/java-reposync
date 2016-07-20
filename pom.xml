@@ -198,8 +198,9 @@
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
+                    <outputDirectory>${docker.dir}</outputDirectory>
                     <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                        <descriptorRef>${jar.descriptor}</descriptorRef>
                     </descriptorRefs>
                 </configuration>
                 <executions>
@@ -212,6 +213,67 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <artifactId>jdeb</artifactId>
+                <groupId>org.vafer</groupId>
+                <version>1.5</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jdeb</goal>
+                        </goals>
+                        <configuration>
+                            <verbose>true</verbose>
+                            <snapshotExpand>true</snapshotExpand>
+                            <!-- expand "SNAPSHOT" to what is in the "USER" env variable -->
+                            <snapshotEnv>USER</snapshotEnv>
+                            <verbose>true</verbose>
+                            <controlDir>${deb.dir}/control</controlDir>
+                            <dataSet>
+
+                                <data>
+                                    <src>${docker.dir}/${jar.final.name}.jar</src>
+                                    <type>file</type>
+                                    <mapper>
+                                        <type>perm</type>
+                                        <prefix>/usr/share/reposync/lib</prefix>
+                                        <user>root</user>
+                                        <group>root</group>
+                                    </mapper>
+                                </data>
+
+                                <data>
+                                    <type>link</type>
+                                    <symlink>true</symlink>
+                                    <linkName>/usr/share/java/reposync.jar</linkName>
+                                    <linkTarget>/usr/share/reposync/lib/${jar.final.name}.jar</linkTarget>
+                                </data>
+
+                                <data>
+                                    <src>${docker.dir}/reposync.sh</src>
+                                    <type>file</type>
+                                    <mapper>
+                                        <type>perm</type>
+                                        <prefix>/usr/share/reposync/bin</prefix>
+                                        <user>root</user>
+                                        <group>root</group>
+                                        <filemode>755</filemode>
+                                    </mapper>
+                                </data>
+
+                                <data>
+                                    <type>link</type>
+                                    <symlink>true</symlink>
+                                    <linkName>/usr/bin/reposync</linkName>
+                                    <linkTarget>/usr/share/reposync/bin/reposync.sh</linkTarget>
+                                </data>
+
+                            </dataSet>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
@@ -219,5 +281,9 @@
         <jersey.version>2.22.2</jersey.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jackson.version>2.7.3</jackson.version>
+        <jar.descriptor>jar-with-dependencies</jar.descriptor>
+        <docker.dir>${basedir}/docker</docker.dir>
+        <jar.final.name>${project.build.finalName}-${jar.descriptor}</jar.final.name>
+        <deb.dir>${basedir}/src/deb</deb.dir>
     </properties>
 </project>

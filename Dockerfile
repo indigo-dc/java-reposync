@@ -16,7 +16,7 @@ RUN mkdir logs
 RUN touch repolist
 
 # Install syncrepo
-COPY docker/reposync-1.0-SNAPSHOT-jar-with-dependencies.jar /lib/reposync.jar
+COPY docker/reposync-1.0-SNAPSHOT-jar-with-dependencies.jar /usr/share/java/reposync.jar
 COPY docker/reposync.sh /bin/reposync
 ENTRYPOINT ["reposync", "start"]
 
