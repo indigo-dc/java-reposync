@@ -198,8 +198,9 @@
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
+                    <outputDirectory>${docker.dir}</outputDirectory>
                     <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                        <descriptorRef>${jar.descriptor}</descriptorRef>
                     </descriptorRefs>
                 </configuration>
                 <executions>
@@ -212,6 +213,7 @@
                     </execution>
                 </executions>
             </plugin>
+
         </plugins>
     </build>
 
@@ -219,5 +221,191 @@
         <jersey.version>2.22.2</jersey.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jackson.version>2.7.3</jackson.version>
+        <jar.descriptor>jar-with-dependencies</jar.descriptor>
+        <docker.dir>${basedir}/docker</docker.dir>
+        <ansible.dir>${basedir}/ansible</ansible.dir>
+        <jar.final.name>${project.build.finalName}-${jar.descriptor}</jar.final.name>
+        <executable.name>indigo-reposync</executable.name>
+        <deb.dir>${basedir}/src/deb</deb.dir>
+        <config.dir>/etc/indigo-reposync</config.dir>
     </properties>
+
+    <profiles>
+        <profile>
+            <id>deb</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>jdeb</artifactId>
+                        <groupId>org.vafer</groupId>
+                        <version>1.5</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jdeb</goal>
+                                </goals>
+                                <configuration>
+                                    <verbose>true</verbose>
+                                    <snapshotExpand>true</snapshotExpand>
+                                    <!-- expand "SNAPSHOT" to what is in the "USER" env variable -->
+                                    <snapshotEnv>USER</snapshotEnv>
+                                    <verbose>true</verbose>
+                                    <controlDir>${deb.dir}/control</controlDir>
+                                    <dataSet>
+
+                                        <data>
+                                            <src>${docker.dir}/${jar.final.name}.jar</src>
+                                            <type>file</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>/usr/share/reposync/lib</prefix>
+                                                <user>root</user>
+                                                <group>root</group>
+                                            </mapper>
+                                        </data>
+
+                                        <data>
+                                            <type>link</type>
+                                            <symlink>true</symlink>
+                                            <linkName>/usr/share/reposync/lib/reposync.jar</linkName>
+                                            <linkTarget>/usr/share/reposync/lib/${jar.final.name}.jar</linkTarget>
+                                        </data>
+
+                                        <data>
+                                            <src>${docker.dir}/reposync.sh</src>
+                                            <type>file</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>/usr/share/reposync/bin</prefix>
+                                                <user>root</user>
+                                                <group>root</group>
+                                                <filemode>755</filemode>
+                                            </mapper>
+                                        </data>
+
+                                        <data>
+                                            <type>link</type>
+                                            <symlink>true</symlink>
+                                            <linkName>/usr/bin/${executable.name}</linkName>
+                                            <linkTarget>/usr/share/reposync/bin/reposync.sh</linkTarget>
+                                        </data>
+
+                                        <data>
+                                            <src>${ansible.dir}/files</src>
+                                            <type>directory</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>${config.dir}</prefix>
+                                                <user>root</user>
+                                                <group>root</group>
+                                            </mapper>
+                                        </data>
+
+                                        <data>
+                                            <src>${deb.dir}/conf/reposync.properties</src>
+                                            <type>file</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>${config.dir}</prefix>
+                                                <user>root</user>
+                                                <group>root</group>
+                                            </mapper>
+                                        </data>
+
+                                    </dataSet>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>rpm</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>rpm-maven-plugin</artifactId>
+                        <version>2.1.5</version>
+                        <executions>
+                            <execution>
+                                <id>generate-rpm</id>
+                                <goals>
+                                    <goal>rpm</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <group>Atos IT</group>
+                            <packager>Jose Antonio Sanchez</packager>
+                            <prefix>/usr</prefix>
+                            <defineStatements>
+                                <defineStatement>_unpackaged_files_terminate_build 0</defineStatement>
+                            </defineStatements>
+                            <mappings>
+                                <mapping>
+                                    <directory>/usr/share/reposync/lib</directory>
+                                    <username>root</username>
+                                    <groupname>root</groupname>
+                                    <sources>
+                                        <source>
+                                            <location>${docker.dir}/${jar.final.name}.jar</location>
+                                        </source>
+                                    </sources>
+                                </mapping>
+                                <mapping>
+                                    <directory>/usr/share/reposync/bin</directory>
+                                    <filemode>755</filemode>
+                                    <username>root</username>
+                                    <groupname>root</groupname>
+                                    <sources>
+                                        <source>
+                                            <location>${docker.dir}/reposync.sh</location>
+                                        </source>
+                                    </sources>
+                                </mapping>
+
+                                <mapping>
+                                    <directory>${config.dir}</directory>
+                                    <configuration>true</configuration>
+                                    <filemode>640</filemode>
+                                    <username>root</username>
+                                    <groupname>root</groupname>
+                                    <sources>
+                                        <source>
+                                            <location>${ansible.dir}/files</location>
+                                        </source>
+                                    </sources>
+                                </mapping>
+
+                                <mapping>
+                                    <directory>${config.dir}</directory>
+                                    <configuration>true</configuration>
+                                    <filemode>640</filemode>
+                                    <username>root</username>
+                                    <groupname>root</groupname>
+                                    <sources>
+                                        <source>
+                                            <location>${deb.dir}/conf/reposync.properties</location>
+                                        </source>
+                                    </sources>
+                                </mapping>
+                            </mappings>
+                            <postinstallScriptlet>
+                                <script>touch ${config.dir}/repolist &amp;&amp; ln -s /usr/share/reposync/bin/reposync.sh /usr/bin/${executable.name} &amp;&amp; ln -s /usr/share/reposync/lib/${jar.final.name}.jar /usr/share/reposync/lib/reposync.jar</script>
+                            </postinstallScriptlet>
+                            <preremoveScriptlet>
+                                <script>rm ${config.dir}/repolist &amp;&amp; rm /usr/bin/${executable.name} &amp;&amp; rm /usr/share/reposync/lib/reposync.jar</script>
+                            </preremoveScriptlet>
+                            <requires>
+                                <require>java-1.8.0-openjdk-headless</require>
+                            </requires>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

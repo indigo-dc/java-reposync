@@ -34,17 +34,33 @@ public class ConfigurationManager {
   private static final Logger logger = LoggerFactory.getLogger(ConfigurationManager.class);
   // Base URI the Grizzly HTTP server will listen on
   private static final String HOME_PATH = System.getProperty("user.home");
-  private static final String CONFIG_DIR = HOME_PATH + "/.indigo-reposync";
-  private static final String CONFIG_PATH = CONFIG_DIR + "/reposync.properties";
-  private static final String REPOLIST_PATH = CONFIG_DIR + "/repolist";
-  private static final String LOG_CONFIG_PATH = CONFIG_DIR + "/reposync-log.properties";
+  private static final String DEFAULT_CONFIG_PATH = "/etc";
+
+  private static final String HOME_CONFIG_DIR = HOME_PATH + "/.indigo-reposync";
+  private static final String DEFAULT_CONFIG_DIR = DEFAULT_CONFIG_PATH + "/indigo-reposync";
+
+  private static final String CONFIG_FILE = "reposync.properties";
+  private static final String REPOLIST_FILE = "repolist";
+  private static final String LOG_FILE = "reposync-log.properties";
+  private static final String DOCKER_CONFIG_FILE = "docker-java.properties";
 
   private static ObjectMapper mapper = new ObjectMapper();
 
+  private static File getConfigFile(String fileName) {
+    File result = new File(HOME_CONFIG_DIR + "/" + fileName);
+    if (result != null && result.exists()) {
+      logger.debug("Found " + fileName + " at " + result.getAbsolutePath() );
+      return result;
+    } else {
+      logger.debug("Trying default file " + fileName + " at "
+          + DEFAULT_CONFIG_DIR + "/" + fileName );
+      return new File(DEFAULT_CONFIG_DIR + "/" + fileName);
+    }
+  }
+
   private static Properties readConfig() throws ConfigurationException {
     Properties result = new Properties();
-    File configFile = new File(ConfigurationManager.CONFIG_PATH);
-    logger.info("Reading property configuration file from " + CONFIG_PATH);
+    File configFile = getConfigFile(ConfigurationManager.CONFIG_FILE);
     if (configFile.exists()) {
       try {
         result.load(new FileReader(configFile));
@@ -53,14 +69,13 @@ public class ConfigurationManager {
         throw new ConfigurationException("Error reading configuration file",e);
       }
     } else {
-      throw new ConfigurationException("Can't read configuration file " + CONFIG_PATH);
+      throw new ConfigurationException("Can't read configuration file " + CONFIG_FILE);
     }
     return result;
   }
 
-  private static void readSyncRepoList(String repoListFile) throws ConfigurationException {
+  private static void readSyncRepoList(File repoFile) throws ConfigurationException {
     List<String> repoList = new ArrayList<>();
-    File repoFile = new File(repoListFile);
     try {
       LineIterator iterator = FileUtils.lineIterator(repoFile);
       while (iterator.hasNext()) {
@@ -85,7 +100,7 @@ public class ConfigurationManager {
   }
 
   private static void loadLoggingConfig() {
-    File logFile = new File(LOG_CONFIG_PATH);
+    File logFile = getConfigFile(LOG_FILE);
     if (logFile.exists()) {
       try {
         LogManager.getLogManager().readConfiguration(new FileInputStream(logFile));
@@ -108,8 +123,8 @@ public class ConfigurationManager {
       throw ConfigurationException.undefinedProperty(ReposyncTags.REPOSYNC_BACKEND);
     }
 
-    String repoList = REPOLIST_PATH;
-    System.setProperty(ReposyncTags.REPOSYNC_REPO_LIST_FILE, repoList);
+    File repoList = getConfigFile(REPOLIST_FILE);
+    System.setProperty(ReposyncTags.REPOSYNC_REPO_LIST_FILE, repoList.getAbsolutePath());
     if (repoList != null) {
       readSyncRepoList(repoList);
     }
@@ -162,5 +177,22 @@ public class ConfigurationManager {
       return new Boolean(debug);
     }
     return false;
+  }
+
+  /**
+   * Get the Docker configuration from the configuration folder.
+   * @return The docker configuration properties.
+   */
+  public static Properties getDockerProperties() {
+    Properties result = new Properties();
+    File dockerFile = getConfigFile(DOCKER_CONFIG_FILE);
+    if (dockerFile != null && dockerFile.exists()) {
+      try {
+        result.load(new FileInputStream(dockerFile));
+      } catch (IOException e) {
+        logger.error("Error reading docker configuration",e);
+      }
+    }
+    return result;
   }
 }

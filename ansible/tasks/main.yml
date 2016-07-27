@@ -3,25 +3,22 @@
 - include_vars: defaults/main.yml
 
 - name: Creates configuration directory
-  file: path="/home/{{ reposync_user }}/.indigo-reposync" state=directory
-
-- name: Creates log directory
-  file: path="/home/{{ reposync_user }}/.indigo-reposync/logs" state=directory
+  file: path="/etc/indigo-reposync" state=directory
 
 - name: Creates repolist file
-  file: path="/home/{{ reposync_user }}/.indigo-reposync/repolist" state=touch
+  file: path="/etc/indigo-reposync/repolist" state=touch
 
 - name: Log configuration creation
-  copy: src=reposync-log.properties dest="/home/{{ reposync_user }}/.indigo-reposync/reposync-log.properties"
+  copy: src=reposync-log.properties dest="/etc/indigo-reposync/reposync-log.properties"
 
 - debug: var=reposync_backend
 
 - name: Configuration creation
-  template: src=reposync.properties.j2 dest="/home/{{ reposync_user }}/.indigo-reposync/reposync.properties"
+  template: src=reposync.properties.j2 dest="/etc/indigo-reposync/reposync.properties"
 
 - name: Update repolist file
   blockinfile:
-    dest: /home/{{ reposync_user }}/.indigo-reposync/repolist
+    dest: /etc/indigo-reposync/repolist
     create: yes
     block: |
       {{ item }}
