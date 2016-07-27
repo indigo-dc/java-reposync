@@ -62,7 +62,7 @@ public class ReposyncClient {
    * @return Information about the new image.
    */
   public static ImageInfoBean pull(WebTarget target, String imageName, String tag) {
-    WebTarget pullTarget = target.path("images").path(imageName);
+    WebTarget pullTarget = target.path("images").queryParam("imageName",imageName);
     if (tag != null) {
       pullTarget = pullTarget.queryParam("tag",tag);
     }

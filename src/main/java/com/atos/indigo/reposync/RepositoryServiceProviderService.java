@@ -12,6 +12,7 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectImageResponse;
 import com.github.dockerjava.api.command.PullImageCmd;
 import com.github.dockerjava.core.DockerClientBuilder;
+import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.command.PullImageResultCallback;
 
 import org.glassfish.jersey.server.ChunkedOutput;
@@ -21,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -59,7 +61,11 @@ public class RepositoryServiceProviderService {
       ? new OpenStackRepositoryServiceProvider()
       : new OpenNebulaRepositoryServiceProvider();
 
-    this.dockerClient = DockerClientBuilder.getInstance().build();
+    Properties dockerProps = ConfigurationManager.getDockerProperties();
+
+    DockerClientConfig config = new DockerClientConfig.DockerClientConfigBuilder()
+        .withProperties(dockerProps).build();
+    this.dockerClient = DockerClientBuilder.getInstance(config).build();
   }
 
   /**
