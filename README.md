@@ -36,10 +36,6 @@ This file is the main configuration one and should contain the following mandato
 - REPOSYNC_REST_ENDPOINT: Endpoint for the REST server to listen for requests
 - REPOSYNC_BACKEND: Backend to use, which should be one value of OpenNebula or OpenStack
 
-and the following optional properties:
-
-- REPOSYNC_REPO_LIST_FILE: Used in case using the sync operation is needed. It should point to a file in the filesystem with a list of repositories to synchronize, one by line. When syncing, this repositories will be explored and their images and tags will be added to the backend image registry.
-
 Depending on the backend, further properties will have to be defined.
 
 ##### OpenStack configuration

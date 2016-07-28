@@ -2,28 +2,6 @@
 
 - include_vars: defaults/main.yml
 
-- name: Creates configuration directory
-  file: path="/etc/indigo-reposync" state=directory
-
-- name: Creates repolist file
-  file: path="/etc/indigo-reposync/repolist" state=touch
-
-- name: Log configuration creation
-  copy: src=reposync-log.properties dest="/etc/indigo-reposync/reposync-log.properties"
-
-- debug: var=reposync_backend
-
-- name: Configuration creation
-  template: src=reposync.properties.j2 dest="/etc/indigo-reposync/reposync.properties"
-
-- name: Update repolist file
-  blockinfile:
-    dest: /etc/indigo-reposync/repolist
-    create: yes
-    block: |
-      {{ item }}
-  with_items: "{{ reposync_repolist_items }}"
-
 - name: OpenNebula credentials creation
   template: src=one_auth.j2 dest={{ reposync_one_auth_file_path }}
   when: (reposync_backend == "OpenNebula")
@@ -57,3 +35,14 @@
   yum: name=indigo-dc-reposync state=present update_cache=yes
   become: true
   when: ansible_distribution == 'CentOS'
+
+- name: Configuration creation
+  template: src=reposync.properties.j2 dest="/etc/indigo-reposync/reposync.properties"
+
+- name: Update repolist file
+  blockinfile:
+    dest: /etc/indigo-reposync/repolist
+    create: yes
+    block: |
+      {{ item }}
+  with_items: "{{ reposync_repolist_items }}"
