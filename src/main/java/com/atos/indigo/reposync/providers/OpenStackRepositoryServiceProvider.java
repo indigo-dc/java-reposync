@@ -42,9 +42,9 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
   private static final Logger logger = LoggerFactory.getLogger(
       OpenStackRepositoryServiceProvider.class);
 
-  public static final String DOCKER_ID = "dockerid";
-  public static final String DOCKER_IMAGE_NAME = "dockername";
-  public static final String DOCKER_IMAGE_TAG = "dockertag";
+  public static final String DOCKER_ID = "docker_id";
+  public static final String DOCKER_IMAGE_NAME = "docker_name";
+  public static final String DOCKER_IMAGE_TAG = "docker_tag";
   private static final String ENDPOINT = ConfigurationManager.getProperty("OS_AUTH_URL");
   private static final String PROJECT_DOMAIN =
           ConfigurationManager.getProperty("OS_PROJECT_DOMAIN_NAME");
