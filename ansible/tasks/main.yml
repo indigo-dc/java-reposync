@@ -2,16 +2,39 @@
 
 - include_vars: defaults/main.yml
 
-- name: Creates configuration directory
-  file: path="/etc/indigo-reposync" state=directory
+- name: OpenNebula credentials creation
+  template: src=one_auth.j2 dest={{ reposync_one_auth_file_path }}
+  when: (reposync_backend == "OpenNebula")
 
-- name: Creates repolist file
-  file: path="/etc/indigo-reposync/repolist" state=touch
+- name: Install python dependencies (Ubuntu)
+  apt: name=python-apt state=present update_cache=yes
+  become: true
+  when: ansible_distribution == 'Ubuntu'
 
-- name: Log configuration creation
-  copy: src=reposync-log.properties dest="/etc/indigo-reposync/reposync-log.properties"
+- name: Install OpenJDK 8 PPA
+  apt_repository: repo='ppa:openjdk-r/ppa'
+  become: true
+  when: ansible_distribution == 'Ubuntu'
 
-- debug: var=reposync_backend
+- name: Install OpenJDK 8 (Ubuntu)
+  apt: name=openjdk-8-jre-headless state=present update_cache=yes
+  become: true
+  when: ansible_distribution == 'Ubuntu'
+
+- name: Install reposync binary
+  apt: name=indigo-dc-reposync state=present update_cache=yes
+  become: true
+  when: ansible_distribution == 'Ubuntu'
+
+- name: Install OpenJDK 8 (CentOS)
+  yum: name=java-1.8.0-openjdk-headless state=present update_cache=yes
+  become: true
+  when: ansible_distribution == 'CentOS'
+
+- name: Install reposync binary (CentOS)
+  yum: name=indigo-dc-reposync state=present update_cache=yes
+  become: true
+  when: ansible_distribution == 'CentOS'
 
 - name: Configuration creation
   template: src=reposync.properties.j2 dest="/etc/indigo-reposync/reposync.properties"
@@ -23,41 +46,3 @@
     block: |
       {{ item }}
   with_items: "{{ reposync_repolist_items }}"
-
-- name: OpenNebula credentials creation
-  template: src=one_auth.j2 dest=/home/{{ reposync_user }}/.one/one_auth
-  when: (reposync_backend == "OpenNebula")
-
-- name: Set OpenNebula volumes
-  set_fact:
-    volumes: ["/home/{{ reposync_user }}/.indigo-reposync:/root/.indigo-reposync","/home/{{ reposync_user }}/.one/one_auth:{{ reposync_one_auth_file_path }}"]
-  when: (reposync_backend == "OpenNebula")
-
-- name: Set OpenStack volumes
-  set_fact:
-    volumes: ["/home/{{ reposync_user }}/.indigo-reposync:/root/.indigo-reposync","{{ reposync_os_host_certpath }}:{{ reposync_os_certpath }}"]
-  when: (reposync_backend != "OpenNebula")
-
-- name: Install python dependencies (Ubuntu)
-  apt: name=python-pip state=present update_cache=yes
-  become: true
-  when: ansible_distribution == 'Ubuntu'
-
-- name: Install python dependencies (CentOS)
-  yum: name=python-pip state=present update_cache=yes
-  become: true
-  when: ansible_distribution == 'CentOS'
-
-- name: Install docker dependencies
-  pip: name=docker-py
-  become: true
-
-- name: Start reposync docker container
-  docker_container:
-    name: reposync
-    image: indigodatacloud/reposync:{{ reposync_docker_image_tag }}
-    state: started
-    restart: yes
-    volumes: "{{ volumes }}"
-    ports:
-     - "{{ reposync_host_port }}:{{ reposync_port }}"
