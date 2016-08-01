@@ -54,7 +54,7 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
   private static final String ADMIN_PASS_VAR = "OS_PASSWORD";
   public static final String OS = "os";
   public static final String DISTRIBUTION = "distribution";
-  public static final String VERSION = "version";
+  public static final String VERSION = "dist_version";
   public static final String ARCHITECTURE = "hw_architecture";
   private ObjectMapper mapper = new ObjectMapper();
 

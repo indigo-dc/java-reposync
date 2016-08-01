@@ -341,6 +341,7 @@
                             <name>indigo-dc-reposync</name>
                             <group>Atos IT</group>
                             <packager>Jose Antonio Sanchez</packager>
+                            <version>1.0</version>
                             <prefix>/usr</prefix>
                             <defineStatements>
                                 <defineStatement>_unpackaged_files_terminate_build 0</defineStatement>
