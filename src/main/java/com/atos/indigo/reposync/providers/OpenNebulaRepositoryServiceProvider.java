@@ -43,7 +43,7 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
   public static final String OS = "OS";
   public static final String DISTRIBUTION = "DISTRIBUTION";
   public static final String VERSION = "DIST_VERSION";
-  public static final String ARCHITECTURE = "ARCHITECTURE";
+  public static final String ARCHITECTURE = "HW_ARCHITECTURE";
 
   private static final Logger logger = LoggerFactory.getLogger(
           OpenNebulaRepositoryServiceProvider.class);
