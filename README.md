@@ -1,6 +1,10 @@
 # java-syncrepos
 This project is a continuation of the discontinued https://github.com/indigo-dc/python-syncrepos
 
+## Description
+
+This component can be used to synchronize Docker images in DockerHub to instances of either OpenStack or OpenNebula with Docker support already configured. To do so, it relies on the WebHooks mechanisms offered by DockerHub infrastructure and it provides a REST interface to list the available images already synchronized and some operations to force the synchronization of individual ones.
+
 ## Dependencies
 
 This project uses the following elements:
