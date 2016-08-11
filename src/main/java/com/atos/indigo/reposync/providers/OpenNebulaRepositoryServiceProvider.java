@@ -2,12 +2,11 @@ package com.atos.indigo.reposync.providers;
 
 import com.atos.indigo.reposync.ConfigurationException;
 import com.atos.indigo.reposync.ConfigurationManager;
-import com.atos.indigo.reposync.ReposyncTags;
 import com.atos.indigo.reposync.beans.ActionResponseBean;
 import com.atos.indigo.reposync.beans.ImageInfoBean;
+import com.atos.indigo.reposync.beans.ImageInfoBeanFactory;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectImageResponse;
-import com.github.dockerjava.api.model.ContainerConfig;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
@@ -25,7 +24,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import javax.ws.rs.PathParam;
 
@@ -220,8 +218,7 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
 
     if (dockerStoreId != null) {
 
-      ContainerConfig config = img.getConfig();
-      Map<String, String> labels = config.getLabels();
+      ImageInfoBean bean = ImageInfoBeanFactory.toDockerBean(imageName, tag, img);
 
       String name = imageName.replace("/", "_");
       TemplateGenerator templateGenerator = new TemplateGenerator()
@@ -231,16 +228,24 @@ public class OpenNebulaRepositoryServiceProvider implements RepositoryServicePro
           .addProperty("DESCRIPTION", "\"Docker image\"")
           .addProperty(DOCKER_ID, img.getId())
           .addProperty(DOCKER_NAME, imageName)
-          .addProperty(DOCKER_TAG, tag)
-          .addProperty(OS, img.getOs())
-          .addProperty(ARCHITECTURE, img.getArch());
+          .addProperty(DOCKER_TAG, tag);
 
-      String dist = labels.get(ReposyncTags.DISTRIBUTION_TAG);
+      String os = bean.getOs();
+      if (os != null) {
+        templateGenerator.addProperty(OS, bean.getOs());
+      }
+
+      String arch = bean.getArchitecture();
+      if (arch != null) {
+        templateGenerator.addProperty(ARCHITECTURE, img.getArch());
+      }
+
+      String dist = bean.getDistribution();
       if (dist != null) {
         templateGenerator.addProperty(DISTRIBUTION,dist);
       }
 
-      String version = labels.get(ReposyncTags.DIST_VERSION_TAG);
+      String version = bean.getVersion();
       if (version != null) {
         templateGenerator.addProperty(VERSION, version);
       }
