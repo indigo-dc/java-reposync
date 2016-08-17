@@ -2,13 +2,12 @@ package com.atos.indigo.reposync.providers;
 
 import com.atos.indigo.reposync.ConfigurationException;
 import com.atos.indigo.reposync.ConfigurationManager;
-import com.atos.indigo.reposync.ReposyncTags;
 import com.atos.indigo.reposync.beans.ActionResponseBean;
 import com.atos.indigo.reposync.beans.ImageInfoBean;
+import com.atos.indigo.reposync.beans.ImageInfoBeanFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectImageResponse;
-import com.github.dockerjava.api.model.ContainerConfig;
 
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
@@ -221,31 +220,40 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
     InputStream responseStream = restClient.saveImageCmd(id).exec();
     if (responseStream != null) {
 
-      ContainerConfig config = img.getConfig();
-      Map<String, String> labels = config.getLabels();
+      ImageInfoBean bean = ImageInfoBeanFactory.toDockerBean(name, tag, img);
 
-      org.openstack4j.model.common.Payload payload = Payloads.create(responseStream);
+
       ImageBuilder imageBuilder = Builders.image().name(name)
           .containerFormat(ContainerFormat.DOCKER)
           .diskFormat(DiskFormat.RAW)
           .property(DOCKER_ID, id)
           .property(DOCKER_IMAGE_NAME, name)
           .property(DOCKER_IMAGE_TAG, tag)
-          .property(OS, img.getOs())
-          .property(ARCHITECTURE, img.getArch())
           .property("img_hv_type", "docker")
           .property("hw_vm_mode", "exe")
           .property("hypervisor_type", "docker");
 
-      String dist = labels.get(ReposyncTags.DISTRIBUTION_TAG);
+      String os = bean.getOs();
+      if (os != null) {
+        imageBuilder.property(OS, os);
+      }
+
+      String arch = bean.getArchitecture();
+      if (arch != null) {
+        imageBuilder.property(ARCHITECTURE, arch);
+      }
+
+      String dist = bean.getDistribution();
       if (dist != null) {
         imageBuilder.property(DISTRIBUTION,dist);
       }
 
-      String version = labels.get(ReposyncTags.DIST_VERSION_TAG);
+      String version = bean.getVersion();
       if (version != null) {
         imageBuilder.property(VERSION, version);
       }
+
+      org.openstack4j.model.common.Payload payload = Payloads.create(responseStream);
 
       Image result = api.create(imageBuilder.build(), payload);
       return result;
