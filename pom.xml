@@ -7,7 +7,7 @@
     <groupId>com.atos.indigo.reposync</groupId>
     <artifactId>reposync</artifactId>
     <packaging>jar</packaging>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.1-SNAPSHOT</version>
     <name>reposync</name>
 
     <repositories>
@@ -305,6 +305,7 @@
                                         <data>
                                             <src>${deb.dir}/conf/reposync.properties</src>
                                             <type>file</type>
+                                            <conffile>true</conffile>
                                             <mapper>
                                                 <type>perm</type>
                                                 <prefix>${config.dir}</prefix>
@@ -341,7 +342,7 @@
                             <name>indigo-dc-reposync</name>
                             <group>Atos IT</group>
                             <packager>Jose Antonio Sanchez</packager>
-                            <version>1.0</version>
+                            <version>1.0.1</version>
                             <prefix>/usr</prefix>
                             <defineStatements>
                                 <defineStatement>_unpackaged_files_terminate_build 0</defineStatement>

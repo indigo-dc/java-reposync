@@ -120,11 +120,16 @@ public class ReposyncClient {
     ObjectMapper mapper = new ObjectMapper();
     String img = null;
     while ((img = input.read()) != null) {
-      try {
-        ImageInfoBean imgBean = mapper.readValue(img + "}",ImageInfoBean.class);
-        func.accept(imgBean);
-      } catch (IOException e) {
-        e.printStackTrace();
+      if ("{".equals(img)) {
+        System.out.println(
+            "No images synchronized. Check if the repository list file is empty");
+      } else {
+        try {
+          ImageInfoBean imgBean = mapper.readValue(img + "}", ImageInfoBean.class);
+          func.accept(imgBean);
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
       }
     }
   }
