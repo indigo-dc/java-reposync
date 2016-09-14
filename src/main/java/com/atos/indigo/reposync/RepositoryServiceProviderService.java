@@ -208,50 +208,73 @@ public class RepositoryServiceProviderService {
     final ChunkedOutput<String> output = new ChunkedOutput<>(String.class);
 
     List<String> repoList = ConfigurationManager.getRepoList();
-    final List<Thread> threads = new ArrayList<>();
-    for (String repo : repoList) {
-      String[] repoInfo = repo.split(":");
-      final String finalRepo = repoInfo[0];
-      final String finalTag = (repoInfo.length > 1) ? repoInfo[1] : "latest";
-      threads.add(
-          new Thread() {
-            @Override
-            public void run() {
-              synchronized (dockerClient) {
+    if (!repoList.isEmpty()) {
+      final List<Thread> threads = new ArrayList<>();
 
-                String fullImgName = finalRepo + ":" + finalTag;
+      for (String repo : repoList) {
+        String[] repoInfo = repo.split(":");
+        String repoName = repoInfo[0];
+        if (repo != null && !repo.trim().isEmpty()) {
+          final String finalRepo = repoName.trim();
+          final String finalTag = (repoInfo.length > 1) ? repoInfo[1] : "latest";
+          threads.add(
+              new Thread() {
+                @Override
+                public void run() {
+                  synchronized (dockerClient) {
 
-                dockerClient.pullImageCmd(fullImgName).exec(new PullImageResultCallback())
-                    .awaitSuccess();
+                    String fullImgName = finalRepo + ":" + finalTag;
 
-                InspectImageResponse img = dockerClient.inspectImageCmd(fullImgName)
-                    .exec();
+                    dockerClient.pullImageCmd(fullImgName).exec(new PullImageResultCallback())
+                      .awaitSuccess();
 
-                try {
-                  output.write(mapper.writeValueAsString(
-                              provider.imageUpdated(finalRepo, finalTag, img, dockerClient))
-                              + IMG_SEPARATOR);
-                } catch (IOException e) {
-                  logger.error("Error updating image " + fullImgName + " during synchronization",e);
-                }
+                    InspectImageResponse img = dockerClient.inspectImageCmd(fullImgName)
+                        .exec();
 
-                threads.remove(this);
-                if (threads.isEmpty()) {
-                  try {
-                    output.close();
-                  } catch (IOException e) {
-                    logger.error("Error closing output",e);
+                    try {
+                      output.write(mapper.writeValueAsString(
+                          provider.imageUpdated(finalRepo, finalTag, img, dockerClient))
+                          + IMG_SEPARATOR);
+                    } catch (IOException e) {
+                      logger.error(
+                          "Error updating image " + fullImgName + " during synchronization", e);
+                    }
+
+                    threads.remove(this);
+                    if (threads.isEmpty()) {
+                      try {
+                        output.close();
+                      } catch (IOException e) {
+                        logger.error("Error closing output", e);
+                      }
+                    }
                   }
                 }
               }
-            }
-          }
-      );
+          );
+        } else {
+          logger.error("Invalid image name found in repolist file: " + repo);
+          writeEmptySync(output);
+        }
+      }
+
+      threads.forEach(thread -> thread.start());
+    } else {
+      writeEmptySync(output);
     }
 
-    threads.forEach(thread -> thread.start());
+
 
     return output;
+  }
+
+  private void writeEmptySync(ChunkedOutput<String> output) {
+    try {
+      output.write("{}" + IMG_SEPARATOR);
+      output.close();
+    } catch (IOException e) {
+      logger.error("Error writing empty sync response",e);
+    }
   }
 
   public void setProvider(RepositoryServiceProvider provider) {

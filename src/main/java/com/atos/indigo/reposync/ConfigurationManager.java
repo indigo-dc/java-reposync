@@ -74,6 +74,14 @@ public class ConfigurationManager {
     return result;
   }
 
+  private static void readSyncRepoList() throws ConfigurationException {
+    File repoList = getConfigFile(REPOLIST_FILE);
+    System.setProperty(ReposyncTags.REPOSYNC_REPO_LIST_FILE, repoList.getAbsolutePath());
+    if (repoList != null) {
+      readSyncRepoList(repoList);
+    }
+  }
+
   private static void readSyncRepoList(File repoFile) throws ConfigurationException {
     List<String> repoList = new ArrayList<>();
     try {
@@ -110,6 +118,8 @@ public class ConfigurationManager {
     }
   }
 
+
+
   private static void loadConfig(Properties properties) throws ConfigurationException {
     loadConfigList(properties, BASE_PROPERTIES);
     String backend = System.getProperty(ReposyncTags.REPOSYNC_BACKEND);
@@ -121,12 +131,6 @@ public class ConfigurationManager {
       }
     } else {
       throw ConfigurationException.undefinedProperty(ReposyncTags.REPOSYNC_BACKEND);
-    }
-
-    File repoList = getConfigFile(REPOLIST_FILE);
-    System.setProperty(ReposyncTags.REPOSYNC_REPO_LIST_FILE, repoList.getAbsolutePath());
-    if (repoList != null) {
-      readSyncRepoList(repoList);
     }
   }
 
@@ -154,17 +158,22 @@ public class ConfigurationManager {
    * @return List of repositories.
    */
   public static List<String> getRepoList() {
-    String repoListStr = getProperty(ReposyncTags.REPOSYNC_REPO_LIST);
-    if (repoListStr != null) {
-      try {
+    try {
+      readSyncRepoList();
+      String repoListStr = getProperty(ReposyncTags.REPOSYNC_REPO_LIST);
+      if (repoListStr != null) {
         return mapper.readValue(repoListStr, new TypeReference<List<String>>(){});
-      } catch (IOException e) {
-        logger.error("Error reading sync repolist: " + repoListStr, e);
+      } else {
         return new ArrayList<>();
       }
-    } else {
+    } catch (ConfigurationException e) {
+      logger.error("Error getting sync repolist", e);
+      return new ArrayList<>();
+    } catch (IOException e) {
+      logger.error("Error reading sync repolist value", e);
       return new ArrayList<>();
     }
+
   }
 
   /**
