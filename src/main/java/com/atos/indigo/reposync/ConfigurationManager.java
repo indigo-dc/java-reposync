@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -22,15 +23,7 @@ import java.util.logging.LogManager;
  */
 public class ConfigurationManager {
 
-  public static final String[] BASE_PROPERTIES = new String[]{
-    ReposyncTags.REPOSYNC_TOKEN, ReposyncTags.REPOSYNC_REST_ENDPOINT,
-    ReposyncTags.REPOSYNC_BACKEND, ReposyncTags.REPOSYNC_REPO_LIST_FILE,
-    ReposyncTags.REPOSYNC_DEBUG_MODE};
-  public static final String[] OPENSTACK_PROPERTIES = new String[]{
-    "OS_PROJECT_DOMAIN_NAME", "OS_USER_DOMAIN_NAME", "OS_PROJECT_NAME",
-    "OS_USERNAME", "OS_PASSWORD", "OS_AUTH_URL",
-    "OS_IDENTITY_API_VERSION", "OS_IMAGE_API_VERSION", "OS_CACERT"};
-  public static final String[] OPENNEBULA_PROPERTIES = new String[]{"ONE_XMLRPC", "ONE_AUTH"};
+  private static final Properties properties = new Properties();
   private static final Logger logger = LoggerFactory.getLogger(ConfigurationManager.class);
   // Base URI the Grizzly HTTP server will listen on
   private static final String HOME_PATH = System.getProperty("user.home");
@@ -58,12 +51,25 @@ public class ConfigurationManager {
     }
   }
 
-  private static Properties readConfig() throws ConfigurationException {
-    Properties result = new Properties();
+  /**
+   * Read the configuration from a provided source. Used mainly for testing purposes.
+   * @param reader A reader containig the configuration file.
+   * @throws ConfigurationException If something goes wrong
+   */
+  public static void readConfig(Reader reader) throws ConfigurationException {
+    try {
+      properties.load(reader);
+    } catch (IOException e) {
+      logger.error("Error trying to load config file", e);
+      throw new ConfigurationException("Error reading configuration file",e);
+    }
+  }
+
+  private static void readConfig() throws ConfigurationException {
     File configFile = getConfigFile(ConfigurationManager.CONFIG_FILE);
     if (configFile.exists()) {
       try {
-        result.load(new FileReader(configFile));
+        readConfig(new FileReader(configFile));
       } catch (IOException e) {
         logger.error("Error trying to load config file", e);
         throw new ConfigurationException("Error reading configuration file",e);
@@ -71,7 +77,6 @@ public class ConfigurationManager {
     } else {
       throw new ConfigurationException("Can't read configuration file " + CONFIG_FILE);
     }
-    return result;
   }
 
   private static void readSyncRepoList() throws ConfigurationException {
@@ -95,18 +100,6 @@ public class ConfigurationManager {
     }
   }
 
-  private static void loadConfigList(Properties properties, String[] propList) {
-    for (String prop : propList) {
-      String currentValue = System.getProperty(prop);
-      if (currentValue == null || currentValue.isEmpty()) {
-        currentValue = properties.getProperty(prop);
-        if (currentValue != null) {
-          System.setProperty(prop, properties.getProperty(prop));
-        }
-      }
-    }
-  }
-
   private static void loadLoggingConfig() {
     File logFile = getConfigFile(LOG_FILE);
     if (logFile.exists()) {
@@ -119,24 +112,13 @@ public class ConfigurationManager {
   }
 
 
-
-  private static void loadConfig(Properties properties) throws ConfigurationException {
-    loadConfigList(properties, BASE_PROPERTIES);
-    String backend = System.getProperty(ReposyncTags.REPOSYNC_BACKEND);
-    if (backend != null) {
-      if (ReposyncTags.REPOSYNC_BACKEND_OS.toLowerCase().equals(backend.toLowerCase())) {
-        loadConfigList(properties, OPENSTACK_PROPERTIES);
-      } else {
-        loadConfigList(properties, OPENNEBULA_PROPERTIES);
-      }
-    } else {
-      throw ConfigurationException.undefinedProperty(ReposyncTags.REPOSYNC_BACKEND);
-    }
-  }
-
+  /**
+   * Read the configuration from the default location in the filesystem.
+   * @throws ConfigurationException If something goes wrong.
+   */
   public static void loadConfig() throws ConfigurationException {
     loadLoggingConfig();
-    loadConfig(readConfig());
+    readConfig();
   }
 
   /**
@@ -146,10 +128,10 @@ public class ConfigurationManager {
    */
   public static String getProperty(String property) {
     String prop = System.getenv(property);
-    if (prop != null) {
-      return prop;
+    if (prop == null) {
+      return properties.getProperty(property);
     } else {
-      return System.getProperty(property);
+      return null;
     }
   }
 

@@ -6,6 +6,8 @@ import com.atos.indigo.reposync.beans.ActionResponseBean;
 import com.atos.indigo.reposync.beans.ImageInfoBean;
 import com.atos.indigo.reposync.beans.ImageInfoBeanFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.MapType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectImageResponse;
 
@@ -30,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -51,11 +54,15 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
   private static final String DOMAIN = ConfigurationManager.getProperty("OS_USER_DOMAIN_NAME");
   private static final String ADMIN_USER_VAR = "OS_USERNAME";
   private static final String ADMIN_PASS_VAR = "OS_PASSWORD";
+  private static final String SHARE_CONFIG = ConfigurationManager.getProperty("SHARE_CONFIG");
+
   public static final String OS = "os";
   public static final String DISTRIBUTION = "distribution";
   public static final String VERSION = "dist_version";
   public static final String ARCHITECTURE = "hw_architecture";
+
   private ObjectMapper mapper = new ObjectMapper();
+  private Map<String, List<String>> shareConfig;
 
   private Token token;
 
@@ -65,13 +72,24 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
    */
   public OpenStackRepositoryServiceProvider() throws ConfigurationException {
     OSFactory.enableHttpLoggingFilter(ConfigurationManager.isDebugMode());
+    if (SHARE_CONFIG != null) {
+      TypeFactory typeFactory = mapper.getTypeFactory();
+      MapType mapType = typeFactory.constructMapType(HashMap.class,
+          typeFactory.constructType(String.class),
+          typeFactory.constructArrayType(String.class));
+      try {
+        shareConfig = mapper.readValue(SHARE_CONFIG, mapType);
+      } catch (IOException e) {
+        logger.error("Error reading sharing information from configuration",e);
+      }
+    }
   }
 
   public OpenStackRepositoryServiceProvider(Token token) {
     this.token = token;
   }
 
-  private OSClient getClient(String username, String password) {
+  private OSClient.OSClientV3 getClient(String username, String password) {
     logger.debug("Getting client from OpenStack4j");
     logger.debug("Creating V3 builder");
 
@@ -256,10 +274,18 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
       org.openstack4j.model.common.Payload payload = Payloads.create(responseStream);
 
       Image result = api.create(imageBuilder.build(), payload);
+
+      if (shareConfig != null) {
+        shareImage(result, name, tag, id, api);
+      }
+
       return result;
     } else {
       return null;
     }
 
+  }
+
+  private void shareImage(Image result, String name, String tag, String id, ImageService api) {
   }
 }

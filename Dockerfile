@@ -14,7 +14,7 @@ COPY ansible/files/reposync-log.properties reposync-log.properties
 RUN touch repolist
 
 # Install syncrepo
-COPY docker/reposync-1.0.1-SNAPSHOT-jar-with-dependencies.jar /usr/share/reposync/lib/reposync.jar
+COPY docker/reposync-1.1.0-SNAPSHOT-jar-with-dependencies.jar /usr/share/reposync/lib/reposync.jar
 COPY docker/reposync.sh /bin/indigo-reposync
 ENTRYPOINT ["indigo-reposync", "start"]
 

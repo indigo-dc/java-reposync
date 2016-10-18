@@ -38,6 +38,7 @@ import javax.ws.rs.core.GenericType;
 
 public class RepositoryServiceProviderServiceTest {
 
+  public static final String SERVER_ENDPOINT = "http://localhost:8085";
   private HttpServer server;
   private WebTarget target;
 
@@ -183,16 +184,15 @@ public class RepositoryServiceProviderServiceTest {
     RepositoryServiceProviderService svc =
       new RepositoryServiceProviderService(provider,mockClient);
 
-    System.setProperty(ReposyncTags.REPOSYNC_REST_ENDPOINT,"http://localhost:8085");
 
     // start the server
-    server = Main.startServer(svc);
+    server = Main.startServer(svc, SERVER_ENDPOINT);
     // create the client
     ClientConfig clientConfig = new ClientConfig();
     clientConfig.register(JacksonJsonProvider.class);
     Client c = ClientBuilder.newClient(clientConfig);
 
-    target = c.target(System.getProperty(ReposyncTags.REPOSYNC_REST_ENDPOINT)).path("v1.0");
+    target = c.target(SERVER_ENDPOINT).path("v1.0");
   }
 
   @After

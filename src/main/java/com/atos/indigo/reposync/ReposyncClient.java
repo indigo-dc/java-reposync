@@ -150,7 +150,8 @@ public class ReposyncClient {
     clientConfig.register(JacksonJsonProvider.class);
     Client client = ClientBuilder.newClient(clientConfig);
 
-    target = client.target(System.getProperty(ReposyncTags.REPOSYNC_REST_ENDPOINT)).path("v1.0");
+    target = client.target(
+        ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_REST_ENDPOINT)).path("v1.0");
 
     if (args.length == 0) {
       showUsage();
