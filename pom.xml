@@ -321,7 +321,7 @@
                                         </data>
 
                                         <data>
-                                            <src>${deb.dir}/init/reposync-service</src>
+                                            <src>${deb.dir}/init/indigo-reposync</src>
                                             <type>file</type>
                                             <mapper>
                                                 <type>perm</type>
@@ -384,6 +384,18 @@
                                     <sources>
                                         <source>
                                             <location>${docker.dir}/reposync.sh</location>
+                                        </source>
+                                    </sources>
+                                </mapping>
+
+                                <mapping>
+                                    <directory>/etc/systemd/system</directory>
+                                    <filemode>755</filemode>
+                                    <username>root</username>
+                                    <groupname>root</groupname>
+                                    <sources>
+                                        <source>
+                                            <location>${basedir}/src/rpm/init/indigo-reposync.service</location>
                                         </source>
                                     </sources>
                                 </mapping>
