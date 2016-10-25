@@ -18,5 +18,9 @@ public interface ReposyncTags {
   String ARCHITECTURE_TAG = "eu.indigo-datacloud.architecture";
   String TYPE_TAG = "eu.indigo-datacloud.type";
 
+  String USE_SSL = "USE_SSL";
+  String KEYSTORE_LOCATION = "KEYSTORE_LOCATION";
+  String KEYSTORE_PASSWORD = "KEYSTORE_PASSWORD";
+
 
 }

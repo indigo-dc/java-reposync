@@ -57,7 +57,7 @@ public class RepositoryServiceProviderService {
    */
   public RepositoryServiceProviderService() throws ConfigurationException {
     this.provider = (ReposyncTags.REPOSYNC_BACKEND_OS.toLowerCase().equals(
-      System.getProperty(ReposyncTags.REPOSYNC_BACKEND).toLowerCase()))
+      ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_BACKEND).toLowerCase()))
       ? new OpenStackRepositoryServiceProvider()
       : new OpenNebulaRepositoryServiceProvider();
 
@@ -181,7 +181,8 @@ public class RepositoryServiceProviderService {
     logger.info("Received webhook notification. Payload: \n" + payload.toString());
 
 
-    if (token != null && token.equals(System.getProperty(ReposyncTags.REPOSYNC_TOKEN))) {
+    if (token != null && token.equals(
+        ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_TOKEN))) {
       JsonNode pushData = payload.get("push_data");
       String tag = pushData.get("tag").asText();
 

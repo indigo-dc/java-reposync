@@ -14,7 +14,8 @@ public class AuthorizationRequestFilter implements ContainerRequestFilter {
   @Override
   public void filter(ContainerRequestContext requestContext) throws IOException {
     String token = requestContext.getHeaderString(ReposyncTags.TOKEN_HEADER);
-    if (token == null || !token.equals(System.getProperty(ReposyncTags.REPOSYNC_TOKEN))) {
+    if (token == null || !token.equals(
+        ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_TOKEN))) {
       requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
           .entity("Authorization token needed").build());
     }

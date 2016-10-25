@@ -1,0 +1,12 @@
+[Unit]
+Description=Java Reposync from DockerHub
+Documentation=https://www.gitbook.com/book/indigo-dc/java-syncrepos/details
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/indigo-reposync start
+ExecReload=/usr/bin/indigo-reposync stop && /usr/bin/indigo-reposync start
+ExecStop=/usr/bin/indigo-reposync stop
+
+[Install]
+WantedBy=multi-user.target
