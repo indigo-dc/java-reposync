@@ -37,13 +37,7 @@ To execute any command, when the container is running execute:
 
 `docker exec reposyncserver indigo-reposync <command>` 
 
-The following commands are available in the reposync shell script:
-
-- start: Starts the REST server
-- list: List the images in the backend IaaS platform
-- pull <image> [tag]: Pull an image with an optional tag from DockerHub into the IaaS repository.
-- delete <imageId>: Delete an image from the IaaS repository
-- sync: Execute a synchronization operation pulling all images and tags found in the repository list specified in the REPOSYNC_REPO_LIST_FILE file
+The list of commands available are described in the [Usage section](running.md)
 
 ## DockerHub configuration
 
