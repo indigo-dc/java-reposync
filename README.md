@@ -37,3 +37,5 @@ To extend or develop new functionalities, see the [development guide](docs/devel
 ## [Deployment](docs/deployment.md)
 
 ## [Usage](docs/running.md)
+
+## [Service reference card](docs/reference_card.md)
