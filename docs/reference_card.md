@@ -1,4 +1,4 @@
-# Service Reference Card Template
+# Indigo Reposync Service Reference Card
 
 * Daemons running
 
