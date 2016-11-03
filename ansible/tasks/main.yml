@@ -21,6 +21,11 @@
   become: true
   when: ansible_distribution == 'Ubuntu'
 
+- name: Install JSVC (Ubuntu)
+  apt: name=jsvc state=present update_cache=yes
+  become: true
+  when: ansible_distribution == 'Ubuntu'
+
 - name: Install reposync binary
   apt: name=indigo-dc-reposync state=present update_cache=yes
   become: true
@@ -28,6 +33,11 @@
 
 - name: Install OpenJDK 8 (CentOS)
   yum: name=java-1.8.0-openjdk-headless state=present update_cache=yes
+  become: true
+  when: ansible_distribution == 'CentOS'
+
+- name: Install JSVC (CentOS)
+  yum: name=apache-commons-daemon-jsvc state=present update_cache=yes
   become: true
   when: ansible_distribution == 'CentOS'
 
