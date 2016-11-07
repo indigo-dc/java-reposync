@@ -16,5 +16,5 @@ RUN touch repolist
 # Install syncrepo
 COPY docker/reposync-1.1.0-SNAPSHOT-jar-with-dependencies.jar /usr/share/reposync/lib/reposync.jar
 COPY docker/reposync.sh /bin/indigo-reposync
-ENTRYPOINT ["indigo-reposync", "start"]
+ENTRYPOINT ["java", "-cp", "/usr/share/reposync/lib/reposync.jar", "com.atos.indigo.reposync.Main", "start"]
 
