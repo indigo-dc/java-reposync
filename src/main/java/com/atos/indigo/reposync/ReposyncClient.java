@@ -2,6 +2,7 @@ package com.atos.indigo.reposync;
 
 import com.atos.indigo.reposync.beans.ActionResponseBean;
 import com.atos.indigo.reposync.beans.ImageInfoBean;
+import com.atos.indigo.reposync.common.RepositoryServiceProviderServiceClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 
@@ -10,18 +11,19 @@ import dnl.utils.text.table.TextTable;
 import org.apache.commons.lang.StringUtils;
 import org.glassfish.jersey.client.ChunkedInput;
 import org.glassfish.jersey.client.ClientConfig;
+import org.glassfish.jersey.client.proxy.WebResourceFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Form;
+import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.MultivaluedMap;
 
 
 /**
@@ -29,7 +31,7 @@ import javax.ws.rs.core.Response;
  */
 public class ReposyncClient {
 
-  private static WebTarget target;
+  private static RepositoryServiceProviderServiceClient proxy;
 
   private static final String usage = new StringBuilder()
       .append("Usage:\n\n")
@@ -44,68 +46,41 @@ public class ReposyncClient {
 
   /**
    * Returns a list of images installed in the IaaS platform.
-   * @param target REST client.
    * @return List of images.
    */
-  public static List<ImageInfoBean> imageList(WebTarget target) {
-    return target.path("images").request()
-      .header(ReposyncTags.TOKEN_HEADER,
-        ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_TOKEN))
-      .get(new GenericType<List<ImageInfoBean>>(){});
+  public static List<ImageInfoBean> imageList() {
+    return proxy.images(null);
   }
 
   /**
    * Pulls an external image into the IaaS local platform.
-   * @param target REST client.
    * @param imageName Image to pull.
    * @param tag Optional tag.
    * @return Information about the new image.
    */
-  public static ImageInfoBean pull(WebTarget target, String imageName, String tag) {
-    WebTarget pullTarget = target.path("images").queryParam("imageName",imageName);
-    if (tag != null) {
-      pullTarget = pullTarget.queryParam("tag",tag);
-    }
+  public static ImageInfoBean pull(String imageName, String tag) {
 
-    Response response = pullTarget.request()
-        .header(ReposyncTags.TOKEN_HEADER,
-          ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_TOKEN))
-        .put(Entity.json("{}"));
-
-    ChunkedInput<ImageInfoBean> input = response
-        .readEntity(new GenericType<ChunkedInput<ImageInfoBean>>(){});
+    ChunkedInput<ImageInfoBean> input = proxy.pull(imageName, tag, "{}");
 
     return input.read();
   }
 
   /**
    * Deletes an image from the local IaaS platform.
-   * @param target REST client.
    * @param imageId Image Id to delete.
    * @return State of the operation.
    */
-  public static ActionResponseBean delete(WebTarget target, String imageId) {
-    return target.path("images").path(imageId)
-      .request()
-      .header(ReposyncTags.TOKEN_HEADER,
-        ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_TOKEN))
-      .delete(ActionResponseBean.class);
+  public static ActionResponseBean delete(String imageId) {
+    return proxy.delete(imageId);
   }
 
   /**
    * Synchronize the list of repositories configured in repolist file.
-   * @param target REST client.
    * @param func Function that will be executed every time a successful pull is done.
    */
-  public static void sync(WebTarget target, Consumer<ImageInfoBean> func) {
-    Response response = target.path("sync").request()
-        .header(ReposyncTags.TOKEN_HEADER,
-          ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_TOKEN))
-        .accept(MediaType.APPLICATION_JSON_TYPE)
-        .put(Entity.text(""));
+  public static void sync(Consumer<ImageInfoBean> func) {
 
-    ChunkedInput<String> input = response
-        .readEntity(new GenericType<ChunkedInput<String>>(){});
+    ChunkedInput<String> input = proxy.sync("{}");
 
     /* Chunked input does not work for JSON object. It returns a list of objects one after
      * another which results in just the first object being read. The only solution so far
@@ -115,7 +90,7 @@ public class ReposyncClient {
      * when we want to parse it to a POJO.
      */
     input.setParser(ChunkedInput.createParser("}"
-        + RepositoryServiceProviderService.IMG_SEPARATOR));
+        + RepositoryServiceProviderServiceImpl.IMG_SEPARATOR));
 
     ObjectMapper mapper = new ObjectMapper();
     String img = null;
@@ -148,10 +123,23 @@ public class ReposyncClient {
 
     ClientConfig clientConfig = new ClientConfig();
     clientConfig.register(JacksonJsonProvider.class);
-    Client client = ClientBuilder.newClient(clientConfig);
 
-    target = client.target(
-        ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_REST_ENDPOINT)).path("v1.0");
+    ClientBuilder builder = ClientBuilder.newBuilder();
+
+    Client client = builder.newClient(clientConfig);
+
+    WebTarget target = client.target(
+        ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_REST_ENDPOINT));
+
+    MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
+
+    List<Object> tokenList = new ArrayList<>();
+    tokenList.add(ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_TOKEN));
+
+    headers.put(ReposyncTags.TOKEN_HEADER, tokenList);
+
+    proxy = WebResourceFactory.newResource(RepositoryServiceProviderServiceClient.class,
+        target, false, headers, new ArrayList<>(), new Form());
 
     if (args.length == 0) {
       showUsage();
@@ -178,7 +166,7 @@ public class ReposyncClient {
 
             System.out.println(progressMsg);
 
-            ImageInfoBean imageInfoBean = pull(target,name,tag);
+            ImageInfoBean imageInfoBean = pull(name,tag);
 
             printImageInfo(imageInfoBean);
             printImageList();
@@ -192,7 +180,7 @@ public class ReposyncClient {
 
             System.out.println("Deleting image with id " + args[1]);
 
-            ActionResponseBean response = delete(target, args[1]);
+            ActionResponseBean response = delete(args[1]);
             if (response.isSuccess()) {
               System.out.println("Successfully deleted image with id " + args[1]);
               printImageList();
@@ -208,7 +196,7 @@ public class ReposyncClient {
           System.out.println("Synchronizing images in registries: "
               + ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_REPO_LIST));
 
-          sync(target, (img -> printImageInfo(img)));
+          sync(img -> printImageInfo(img));
           printImageList();
           break;
 
@@ -230,7 +218,7 @@ public class ReposyncClient {
   }
 
   private static void printImageList() {
-    List<ImageInfoBean> images = imageList(target);
+    List<ImageInfoBean> images = imageList();
 
     String[] columns = new String[]{"Id", "Name", "Type",
       "Docker Id", "Docker Name", "Docker Tag"};

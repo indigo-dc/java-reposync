@@ -1,5 +1,6 @@
 package com.atos.indigo.reposync;
 
+import com.fasterxml.jackson.jaxrs.annotation.JacksonFeatures;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 
 import org.apache.commons.daemon.Daemon;
@@ -34,9 +35,10 @@ public class Main implements Daemon{
 
       configurator.setKeyStorePass(
           ConfigurationManager.getProperty(ReposyncTags.KEYSTORE_PASSWORD));
+
     }
 
-    return new SSLEngineConfigurator(configurator).setClientMode(false);
+    return new SSLEngineConfigurator(configurator).setClientMode(false).setNeedClientAuth(false);
   }
 
   /**
@@ -44,15 +46,16 @@ public class Main implements Daemon{
    *
    * @return Grizzly HTTP server.
    */
-  public static HttpServer startServer(RepositoryServiceProviderService svc, String url)
+  public static HttpServer startServer(RepositoryServiceProviderServiceImpl svc, String url)
     throws ConfigurationException {
     // create a resource config that scans for JAX-RS resources and providers
     // in com.atos.indigo.reposync package
     ResourceConfig rc = new ResourceConfig();
     if (svc == null) {
-      rc.packages(BASE_PKG);
-      rc.register(AuthorizationRequestFilter.class);
+      rc.register(RepositoryServiceProviderServiceImpl.class);
+      rc.register(JacksonFeatures.class);
       rc.register(JacksonJsonProvider.class);
+      rc.register(AuthorizationRequestFilter.class);
     } else {
       // For testing purposes
       rc.register(svc);

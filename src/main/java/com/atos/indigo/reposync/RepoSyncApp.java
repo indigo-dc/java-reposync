@@ -19,11 +19,12 @@ public class RepoSyncApp extends Application {
     Set<Class<?>> resources = new HashSet<Class<?>>();
 
     //register REST modules
-    resources.add(RepositoryServiceProviderService.class);
+    resources.add(RepositoryServiceProviderServiceImpl.class);
 
     //Manually adding JacksonJSONFeature
     resources.add(JacksonFeatures.class);
     resources.add(JacksonJsonProvider.class);
+    resources.add(AuthorizationRequestFilter.class);
 
     return resources;
   }

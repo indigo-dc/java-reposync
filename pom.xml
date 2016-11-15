@@ -54,6 +54,10 @@
             <artifactId>jersey-media-json-jackson</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.glassfish.jersey.ext</groupId>
+            <artifactId>jersey-proxy-client</artifactId>
+        </dependency>
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.9</version>
@@ -96,7 +100,13 @@
 
         <dependency>
             <groupId>org.pacesys</groupId>
-            <artifactId>openstack4j</artifactId>
+            <artifactId>openstack4j-core</artifactId>
+            <version>3.0.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.pacesys.openstack4j.connectors</groupId>
+            <artifactId>openstack4j-jersey2</artifactId>
             <version>3.0.2</version>
         </dependency>
 
@@ -434,6 +444,7 @@
                             </preremoveScriptlet>
                             <requires>
                                 <require>java-1.8.0-openjdk-headless</require>
+                                <require>apache-commons-daemon-jsvc</require>
                             </requires>
                         </configuration>
                     </plugin>

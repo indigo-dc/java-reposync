@@ -19,6 +19,9 @@ This file is the main configuration one and should contain the following mandato
 - REPOSYNC_TOKEN: The secret token used for authorization which will be used in the DockerHub webhook. It will be used in the rest of the operations as an authorization token as well.
 - REPOSYNC_REST_ENDPOINT: Endpoint for the REST server to listen for requests
 - REPOSYNC_BACKEND: Backend to use, which should be one value of OpenNebula or OpenStack
+- USE_SSL: Use HTTPS for the REST server. By default it's false
+- KEYSTORE_LOCATION: When using SSL, the location to a keystore with the server certificate
+- KEYSTORE_PASSWORD: When using SSL, the password for the above keystore
 
 Depending on the backend, further properties will have to be defined.
 
