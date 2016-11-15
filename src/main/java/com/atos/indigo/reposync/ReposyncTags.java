@@ -22,5 +22,4 @@ public interface ReposyncTags {
   String KEYSTORE_LOCATION = "KEYSTORE_LOCATION";
   String KEYSTORE_PASSWORD = "KEYSTORE_PASSWORD";
 
-
 }

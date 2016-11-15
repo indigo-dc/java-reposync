@@ -15,3 +15,10 @@ Additionally, a service named indigo-reposync as well, is installed which can st
 
 - Ubuntu 14.04: `service indigo-reposync [start, stop, restart]`
 - CentOS 7: `systemctl [start, stop, restart, status] indigo-reposync.service`
+
+## Note on security
+When the client must connect to the server using HTTPS, the server certificate should be added to the `<jre>\lib\security\cacerts` file as a trusted certificate. To do so, you can use the command `keytool -import -alias <alias> -keystore  <jre_dir>/lib/security/cacerts -file <certificate_file>` where:
+
+- *alias* is a name for the certificate
+- *jre_dir* is the folder of the JRE which will execute the client
+- *certificate_file* is the certificate file of the REST server

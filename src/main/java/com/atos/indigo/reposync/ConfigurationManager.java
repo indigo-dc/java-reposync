@@ -1,6 +1,5 @@
 package com.atos.indigo.reposync;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.commons.io.FileUtils;
@@ -79,15 +78,17 @@ public class ConfigurationManager {
     }
   }
 
-  private static void readSyncRepoList() throws ConfigurationException {
+  private static List<String> readSyncRepoList() throws ConfigurationException {
     File repoList = getConfigFile(REPOLIST_FILE);
     System.setProperty(ReposyncTags.REPOSYNC_REPO_LIST_FILE, repoList.getAbsolutePath());
     if (repoList != null) {
-      readSyncRepoList(repoList);
+      return readSyncRepoList(repoList);
+    } else {
+      return new ArrayList<>();
     }
   }
 
-  private static void readSyncRepoList(File repoFile) throws ConfigurationException {
+  private static List<String> readSyncRepoList(File repoFile) throws ConfigurationException {
     List<String> repoList = new ArrayList<>();
     try {
       LineIterator iterator = FileUtils.lineIterator(repoFile);
@@ -98,6 +99,7 @@ public class ConfigurationManager {
     } catch (IOException e) {
       throw new ConfigurationException("Can't read repository list file",e);
     }
+    return repoList;
   }
 
   private static void loadLoggingConfig() {
@@ -141,18 +143,9 @@ public class ConfigurationManager {
    */
   public static List<String> getRepoList() {
     try {
-      readSyncRepoList();
-      String repoListStr = getProperty(ReposyncTags.REPOSYNC_REPO_LIST);
-      if (repoListStr != null) {
-        return mapper.readValue(repoListStr, new TypeReference<List<String>>(){});
-      } else {
-        return new ArrayList<>();
-      }
+      return readSyncRepoList();
     } catch (ConfigurationException e) {
       logger.error("Error getting sync repolist", e);
-      return new ArrayList<>();
-    } catch (IOException e) {
-      logger.error("Error reading sync repolist value", e);
       return new ArrayList<>();
     }
 

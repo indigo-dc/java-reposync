@@ -5,4 +5,4 @@ Priority: low
 Architecture: all
 Description: Repository synchronization module for Indigo-DataCloud
 Maintainer: jose.sanchezm@atos.net
-Depends: default-jre (>=2:1.8) | openjdk-8-jre | openjdk-8-jre-headless | openjdk-8
+Depends: default-jre (>=2:1.8) | openjdk-8-jre | openjdk-8-jre-headless | openjdk-8, jsvc

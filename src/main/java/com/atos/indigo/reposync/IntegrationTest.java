@@ -2,16 +2,12 @@ package com.atos.indigo.reposync;
 
 import com.atos.indigo.reposync.beans.ActionResponseBean;
 import com.atos.indigo.reposync.beans.ImageInfoBean;
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 
-import org.glassfish.jersey.client.ClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 
 
@@ -60,18 +56,13 @@ public class IntegrationTest {
       e.printStackTrace();
     }
 
-    ClientConfig clientConfig = new ClientConfig();
-    clientConfig.register(JacksonJsonProvider.class);
-    Client client = ClientBuilder.newClient(clientConfig);
+    ReposyncClient client = new ReposyncClient();
 
-    target = client.target(
-        ConfigurationManager.getProperty(ReposyncTags.REPOSYNC_REST_ENDPOINT)).path("v1.0");
-
-    List<ImageInfoBean> original = ReposyncClient.imageList(target);
+    List<ImageInfoBean> original = client.imageList();
 
     for (ImageInfoBean img : original) {
       if (IMG_NAME.equals(img.getDockerName()) && IMG_TAG.equals(img.getDockerTag())) {
-        ActionResponseBean response = ReposyncClient.delete(target,img.getId());
+        ActionResponseBean response = client.delete(img.getId());
         if (!response.isSuccess()) {
           throw new RuntimeException("Can't delete preexisting " + IMG_NAME + ":"
             + IMG_TAG + " image: ");
@@ -80,15 +71,15 @@ public class IntegrationTest {
       }
     }
 
-    ImageInfoBean added = ReposyncClient.pull(target, IMG_NAME, IMG_TAG);
-    List<ImageInfoBean> afterPull = ReposyncClient.imageList(target);
+    ImageInfoBean added = client.pull(IMG_NAME, IMG_TAG);
+    List<ImageInfoBean> afterPull = client.imageList();
 
     boolean found = findImage(afterPull, added);
 
     if (found) {
-      ActionResponseBean response = ReposyncClient.delete(target,added.getId());
+      ActionResponseBean response = client.delete(added.getId());
       if (response.isSuccess()) {
-        found = findImage(ReposyncClient.imageList(target), added);
+        found = findImage(client.imageList(), added);
 
         if (!found) {
           testSynchronization(target);
@@ -113,11 +104,11 @@ public class IntegrationTest {
 
     final List<String> repos = ConfigurationManager.getRepoList();
 
-    List<ImageInfoBean> images = ReposyncClient.imageList(target);
+    List<ImageInfoBean> images = ReposyncClient.imageList();
 
     for (ImageInfoBean img : images) {
       if (img.getDockerName() != null && repos.contains(img.getDockerName())) {
-        ActionResponseBean response = ReposyncClient.delete(target, img.getId());
+        ActionResponseBean response = ReposyncClient.delete( img.getId());
         if (!response.isSuccess()) {
           throw new RuntimeException("Error deleting image " + img.getDockerName()
             + ":" + img.getDockerTag() + ": " + response.getErrorMessage());
@@ -125,12 +116,12 @@ public class IntegrationTest {
       }
     }
 
-    ReposyncClient.sync(target, img -> repos.remove(img.getDockerName()));
+    ReposyncClient.sync(img -> repos.remove(img.getDockerName()));
 
     if (repos.isEmpty()) {
       List<String> reposOrig = ConfigurationManager.getRepoList();
 
-      images = ReposyncClient.imageList(target);
+      images = ReposyncClient.imageList();
       for (ImageInfoBean img : images) {
         if (img.getDockerName() != null) {
           reposOrig.remove(img.getDockerName());
