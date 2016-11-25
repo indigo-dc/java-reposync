@@ -37,6 +37,18 @@ When using OpenStack as a target for the synchronization, the following properti
 - OS_AUTH_URL
 - OS_CACERT
 
+##### Sharing
+
+On OpenStack there's the possibility of sharing an image with a some other members (tenants). To do so, a configuration file named os-share.json should be created. It must contain a JSON object in which keys are the image names (or image name plus tag) and the values are a list of tenants IDs. For example:
+
+```
+{
+  "busybox" : ["01e906915cc04fe3970c6bc467811e64","0ebfb625d79747da9d9a4bcfa38affe9"],
+  "alpine:3.2" : ["2712d6a5a05f403899e3cd019644e9dc"]
+}
+
+```
+
 #### OpenNebula configuration
 
 When using OpenNebula as backend, the following properties should be defined in the configuration file:

@@ -2,6 +2,7 @@ package com.atos.indigo.reposync.providers;
 
 import com.atos.indigo.reposync.ConfigurationException;
 import com.atos.indigo.reposync.ConfigurationManager;
+import com.atos.indigo.reposync.ReposyncTags;
 import com.atos.indigo.reposync.beans.ActionResponseBean;
 import com.atos.indigo.reposync.beans.ImageInfoBean;
 import com.atos.indigo.reposync.beans.ImageInfoBeanFactory;
@@ -54,7 +55,8 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
   private static final String DOMAIN = ConfigurationManager.getProperty("OS_USER_DOMAIN_NAME");
   private static final String ADMIN_USER_VAR = "OS_USERNAME";
   private static final String ADMIN_PASS_VAR = "OS_PASSWORD";
-  private static final String SHARE_CONFIG = ConfigurationManager.getProperty("SHARE_CONFIG");
+  private static final String SHARE_CONFIG =
+      ConfigurationManager.getProperty(ReposyncTags.SHARE_CONFIG);
 
   public static final String OS = "os";
   public static final String DISTRIBUTION = "distribution";
@@ -62,7 +64,7 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
   public static final String ARCHITECTURE = "hw_architecture";
 
   private ObjectMapper mapper = new ObjectMapper();
-  private Map<String, List<String>> shareConfig;
+  private Map<String, String[]> shareConfig;
 
   private Token token;
 
@@ -276,7 +278,7 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
       Image result = api.create(imageBuilder.build(), payload);
 
       if (shareConfig != null) {
-        shareImage(result, name, tag, id, api);
+        shareImage(result, name, tag, api);
       }
 
       return result;
@@ -286,6 +288,25 @@ public class OpenStackRepositoryServiceProvider implements RepositoryServiceProv
 
   }
 
-  private void shareImage(Image result, String name, String tag, String id, ImageService api) {
+  private void shareImage(Image result, String name, String tag, ImageService api) {
+    String[] tenants = shareConfig.get(name);
+    if (tenants != null) {
+      addTenants(result.getId(), tenants, api);
+    } else {
+      tenants = shareConfig.get(name + ":" + tag);
+      if (tenants != null) {
+        addTenants(result.getId(), tenants, api);
+      }
+    }
+  }
+
+  private void addTenants(String imageId, String[] tenants, ImageService api) {
+    for (String tenant : tenants) {
+      try {
+        api.addMember(imageId, tenant);
+      } catch (Exception e) {
+        logger.error("Error sharing image " + imageId + " with tenant " + tenant, e);
+      }
+    }
   }
 }

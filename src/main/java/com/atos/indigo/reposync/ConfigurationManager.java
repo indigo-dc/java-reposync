@@ -12,6 +12,8 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -35,6 +37,8 @@ public class ConfigurationManager {
   private static final String REPOLIST_FILE = "repolist";
   private static final String LOG_FILE = "reposync-log.properties";
   private static final String DOCKER_CONFIG_FILE = "docker-java.properties";
+
+  private static final String OS_SHARE_FILE = "os-share.json";
 
   private static ObjectMapper mapper = new ObjectMapper();
 
@@ -81,7 +85,7 @@ public class ConfigurationManager {
   private static List<String> readSyncRepoList() throws ConfigurationException {
     File repoList = getConfigFile(REPOLIST_FILE);
     System.setProperty(ReposyncTags.REPOSYNC_REPO_LIST_FILE, repoList.getAbsolutePath());
-    if (repoList != null) {
+    if (repoList != null && repoList.exists()) {
       return readSyncRepoList(repoList);
     } else {
       return new ArrayList<>();
@@ -113,6 +117,17 @@ public class ConfigurationManager {
     }
   }
 
+  private static void readShareConfig() {
+    File shareFile = getConfigFile(OS_SHARE_FILE);
+    if (shareFile != null && shareFile.exists()) {
+      try {
+        properties.put(ReposyncTags.SHARE_CONFIG, new String(
+            Files.readAllBytes(Paths.get(shareFile.toURI()))));
+      } catch (IOException e) {
+        logger.error("Error reading sharing configuration",e);
+      }
+    }
+  }
 
   /**
    * Read the configuration from the default location in the filesystem.
@@ -121,6 +136,7 @@ public class ConfigurationManager {
   public static void loadConfig() throws ConfigurationException {
     loadLoggingConfig();
     readConfig();
+    readShareConfig();
   }
 
   /**
