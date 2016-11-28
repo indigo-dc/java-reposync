@@ -25,6 +25,7 @@ The files are:
 - reposync.properties with the Indigo reposync configuration
 - reposync-log.properties with logging configuration
 - repolyst with a list of docker images to synchronize
+- os-share.json with sharing information for OpenStack
 
 A default configuration and a template for reposync.properties is installed in /etc/indigo-reposync when the packages are installed.
 
