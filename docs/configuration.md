@@ -27,15 +27,15 @@ Depending on the backend, further properties will have to be defined.
 
 #### OpenStack configuration
 
-When using OpenStack as a target for the synchronization, the following properties should be defined in .reposync.properties file:
+When using OpenStack as a target for the synchronization, the following properties should be defined in reposync.properties file:
 
-- OS_PROJECT_DOMAIN_NAME
-- OS_USER_DOMAIN_NAME
-- OS_PROJECT_NAME
-- OS_USERNAME
-- OS_PASSWORD
-- OS_AUTH_URL
-- OS_CACERT
+- OS_PROJECT_DOMAIN_NAME: Project domain in OpenStack
+- OS_USER_DOMAIN_NAME: User domain in OpenStack
+- OS_PROJECT_NAME: Project name to use
+- OS_USERNAME: Username to use to access Keystone
+- OS_PASSWORD: Password for the aforementioned user
+- OS_AUTH_URL: URL to the Keystone server API. **Please note that only v3 of the API is supported.**
+- OS_CACERT: In case of using SSL, path to the .cert file used during server interactions
 
 ##### Sharing
 
